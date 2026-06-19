@@ -155,6 +155,9 @@ configure() {
     --password="$user_password" \
     --admin=1
 
+  # Create storage link
+  php artisan storage:link || true
+
   success "Configured environment!"
 }
 

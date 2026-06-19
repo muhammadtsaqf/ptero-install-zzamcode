@@ -62,6 +62,9 @@ perform_update() {
   output "Menjalankan migrasi database..."
   php artisan migrate --seed --force
 
+  output "Membuat storage symlink..."
+  php artisan storage:link || true
+
   output "Mengembalikan izin kepemilikan file..."
   case "$OS" in
   debian | ubuntu)
