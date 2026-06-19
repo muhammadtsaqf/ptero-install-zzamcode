@@ -75,6 +75,7 @@ while [ "$done" == false ]; do
     "Install Panel"
     "Install Wings"
     "Install keduanya [0] dan [1] di mesin yang sama (skrip wings berjalan setelah panel)"
+    "Update Panel (Pembaruan Frontend/UI tanpa instal ulang)"
     # "Uninstall panel atau wings\n"
 
     "Install Panel dengan versi canary dari skrip (versi yang ada di main, mungkin ada bug!)"
@@ -87,6 +88,7 @@ while [ "$done" == false ]; do
     "panel"
     "wings"
     "panel;wings"
+    "update"
     # "uninstall"
 
     "panel_canary"
