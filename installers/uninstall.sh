@@ -65,7 +65,7 @@ rm_docker_containers() {
 rm_wings_files() {
   output "Removing wings files..."
 
-  systemctl disable --now wings
+  systemctl disable --now wings || true
   [ -f /etc/systemd/system/wings.service ] && rm -rf /etc/systemd/system/wings.service
 
   [ -d /etc/pterodactyl ] && rm -rf /etc/pterodactyl
@@ -76,15 +76,15 @@ rm_wings_files() {
 
 rm_services() {
   output "Removing services..."
-  systemctl disable --now pteroq
+  systemctl disable --now pteroq || true
   rm -rf /etc/systemd/system/pteroq.service
   case "$OS" in
   debian | ubuntu)
-    systemctl disable --now redis-server
+    systemctl disable --now redis-server || true
     ;;
   centos)
-    systemctl disable --now redis
-    systemctl disable --now php-fpm
+    systemctl disable --now redis || true
+    systemctl disable --now php-fpm || true
     rm -rf /etc/php-fpm.d/www-pterodactyl.conf
     ;;
   esac
