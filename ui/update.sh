@@ -45,8 +45,7 @@ main() {
     exit 1
   fi
 
-  warning "Proses ini akan mengunduh versi terbaru panel dan menimpa file yang ada."
-  warning "Pastikan Anda sudah melakukan BACKUP database dan file panel sebelum melanjutkan."
+
   
   echo -e -n "* Apakah Anda yakin ingin melanjutkan proses pembaruan panel? (y/N): "
   read -r CONFIRM
