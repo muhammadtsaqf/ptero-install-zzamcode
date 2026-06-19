@@ -205,6 +205,37 @@ install_pteroq() {
   success "Installed pteroq!"
 }
 
+install_whatsapp_bot() {
+  output "Installing WhatsApp Bot service.."
+
+  if ! command -v node >/dev/null 2>&1; then
+    output "Installing Node.js 20.x..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    case "$OS" in
+    debian | ubuntu)
+      apt-get install -y nodejs
+      ;;
+    rocky | almalinux)
+      dnf install -y nodejs
+      ;;
+    esac
+  fi
+
+  if ! command -v pm2 >/dev/null 2>&1; then
+    npm install -g pm2
+  fi
+
+  if [ -d "/var/www/pterodactyl/whatsapp-bot" ]; then
+    cd /var/www/pterodactyl/whatsapp-bot
+    npm install || true
+    pm2 start index.js --name "pterodactyl-wa-bot" || true
+    pm2 save || true
+    cd /var/www/pterodactyl
+  fi
+
+  success "Installed WhatsApp Bot service!"
+}
+
 # -------- OS specific install functions ------- #
 
 enable_services() {
@@ -411,6 +442,7 @@ perform_install() {
   set_folder_permissions
   insert_cronjob
   install_pteroq
+  install_whatsapp_bot
   configure_nginx
   [ "$CONFIGURE_LETSENCRYPT" == true ] && letsencrypt
 

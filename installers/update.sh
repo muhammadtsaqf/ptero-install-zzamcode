@@ -78,6 +78,25 @@ perform_update() {
   output "Me-restart queue workers..."
   php artisan queue:restart || true
 
+  output "Memperbarui WhatsApp Bot..."
+  if ! command -v node >/dev/null 2>&1; then
+    output "Menginstal Node.js untuk WhatsApp Bot..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ] && apt-get install -y nodejs
+    [ "$OS" == "rocky" ] || [ "$OS" == "almalinux" ] && dnf install -y nodejs
+  fi
+  if ! command -v pm2 >/dev/null 2>&1; then
+    npm install -g pm2
+  fi
+
+  if [ -d "/var/www/pterodactyl/whatsapp-bot" ]; then
+    cd /var/www/pterodactyl/whatsapp-bot
+    npm install || true
+    pm2 restart pterodactyl-wa-bot || pm2 start index.js --name "pterodactyl-wa-bot" || true
+    pm2 save || true
+    cd /var/www/pterodactyl
+  fi
+
   output "Menghidupkan panel kembali..."
   php artisan up
 
