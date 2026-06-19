@@ -7,7 +7,7 @@ set -e
 # Project 'ptero-install-zzamcode'                                                   #
 #                                                                                    #
 # Copyright (C) 2018 - 2026, Vilhelm Prytz, <vilhelm@prytznet.se>                    #
-# Modified by Zzamcode                                                               #
+# Modified by zzamcode                                                               #
 #                                                                                    #
 #   This program is free software: you can redistribute it and/or modify             #
 #   it under the terms of the GNU General Public License as published by             #

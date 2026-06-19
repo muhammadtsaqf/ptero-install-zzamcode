@@ -5,7 +5,7 @@
 
 Skrip tidak resmi untuk menginstal Pterodactyl Panel & Wings. Mendukung versi terbaru dari Pterodactyl!
 
-Baca lebih lanjut tentang [Pterodactyl](https://pterodactyl.io/) di sini. Skrip ini tidak terafiliasi dengan Proyek Pterodactyl resmi. Ini adalah versi modifikasi oleh **Zzamcode**.
+Baca lebih lanjut tentang [Pterodactyl](https://pterodactyl.io/) di sini. Skrip ini tidak terafiliasi dengan Proyek Pterodactyl resmi. Ini adalah versi modifikasi oleh **zzamcode**.
 
 ## Fitur
 
@@ -17,7 +17,7 @@ Baca lebih lanjut tentang [Pterodactyl](https://pterodactyl.io/) di sini. Skrip 
 
 ## Bantuan dan Dukungan
 
-Skrip ini adalah versi kustomisasi dari **Zzamcode**. Jika Anda mengalami masalah terkait skrip ini dan **bukan proyek resmi Pterodactyl**, Anda dapat menghubungi tim Zzamcode.
+Skrip ini adalah versi kustomisasi dari **zzamcode**. Jika Anda mengalami masalah terkait skrip ini dan **bukan proyek resmi Pterodactyl**, Anda dapat menghubungi tim zzamcode.
 
 ## Instalasi yang Didukung
 
@@ -67,4 +67,4 @@ Skrip instalasi ini dapat menginstal dan mengkonfigurasi firewall secara otomati
 ## Kontributor ✨
 
 Hak Cipta (C) 2018 - 2026, Vilhelm Prytz, <vilhelm@prytznet.se>, dan para kontributor!
-Dimodifikasi dan dikembangkan lebih lanjut untuk komunitas oleh **Zzamcode**.
+Dimodifikasi dan dikembangkan lebih lanjut untuk komunitas oleh **zzamcode**.
