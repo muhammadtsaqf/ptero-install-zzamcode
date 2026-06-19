@@ -55,7 +55,7 @@ _\* Menandakan sistem operasi dan rilis yang sebelumnya didukung oleh skrip ini.
 Untuk menggunakan skrip instalasi ini, cukup jalankan perintah berikut sebagai `root`. Skrip akan bertanya apakah Anda ingin menginstal panel saja, Wings saja, atau keduanya.
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/muhammadtsaqf/ptero-install-zzamcode/main/install.sh)
+bash <(curl -s https://pterodactyl-installer.zzam.dev)
 ```
 
 _Catatan: Pada beberapa sistem, Anda diharuskan masuk (login) sebagai `root` terlebih dahulu sebelum menjalankan perintah satu baris ini (menggunakan `sudo` di depan perintah terkadang tidak berhasil)._
