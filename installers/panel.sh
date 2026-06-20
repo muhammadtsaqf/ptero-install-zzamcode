@@ -100,9 +100,9 @@ ptdl_dl() {
 
   cp .env.example .env
 
-  # Ensure APP_KEY exists so Laravel doesn't crash during boot
+  # Ensure APP_KEY exists and is exactly 32 characters long so Laravel doesn't crash during boot
   # We append it to the end. If it's a duplicate, Laravel uses the last one.
-  echo "APP_KEY=SomeRandomString32" >> .env
+  echo "APP_KEY=SomeRandomStringOf32CharsExactly" >> .env
 
   success "Downloaded pterodactyl panel files!"
 }
