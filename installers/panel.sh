@@ -121,8 +121,11 @@ configure() {
   [ "$ASSUME_SSL" == true ] && app_url="https://$FQDN"
   [ "$CONFIGURE_LETSENCRYPT" == true ] && app_url="https://$FQDN"
 
+  # Clear the temporary APP_KEY so Laravel doesn't prompt for overwrite confirmation
+  sed -i -e "s|^APP_KEY=.*|APP_KEY=|" .env
+
   # Generate encryption key
-  php artisan key:generate --force
+  php artisan key:generate --force --no-interaction
 
   # Fill in environment:setup automatically
   php artisan p:environment:setup \
