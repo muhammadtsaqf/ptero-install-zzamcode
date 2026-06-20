@@ -83,9 +83,9 @@ install_phpmyadmin() {
   read -p "* Enter Node ID to link this database to [leave blank if none]: " NODE_ID
   
   echo "* Creating Database User for Pterodactyl Host..."
-  mysql -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';"
-  mysql -u root -e "ALTER USER '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';"
-  mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO '${DB_USER}'@'127.0.0.1' WITH GRANT OPTION;"
+  mysql -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';"
+  mysql -u root -e "ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';"
+  mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO '${DB_USER}'@'%' WITH GRANT OPTION;"
   mysql -u root -e "FLUSH PRIVILEGES;"
   
   echo "* Exposing phpMyAdmin to the web..."
