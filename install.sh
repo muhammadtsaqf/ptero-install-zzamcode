@@ -63,6 +63,7 @@ while [ "$done_lang" == false ]; do
     MSG_OPT_PANEL="Install Panel"
     MSG_OPT_WINGS="Install Wings"
     MSG_OPT_UPDATE="Update Panel (Frontend/UI update without reinstalling)"
+    MSG_OPT_UNINSTALL="Uninstall Panel / Wings"
     MSG_INPUT_REQ="Input is required!"
     MSG_INVALID_OPT="Invalid option!"
     MSG_ENTER_CHOICE="Enter your choice"
@@ -75,6 +76,7 @@ while [ "$done_lang" == false ]; do
     MSG_OPT_PANEL="Install Panel"
     MSG_OPT_WINGS="Install Wings"
     MSG_OPT_UPDATE="Update Panel (Pembaruan Frontend/UI tanpa instal ulang)"
+    MSG_OPT_UNINSTALL="Uninstall Panel / Wings"
     MSG_INPUT_REQ="Input diperlukan!"
     MSG_INVALID_OPT="Pilihan tidak valid!"
     MSG_ENTER_CHOICE="Masukkan pilihan"
@@ -116,12 +118,14 @@ while [ "$done" == false ]; do
     "$MSG_OPT_PANEL"
     "$MSG_OPT_WINGS"
     "$MSG_OPT_UPDATE"
+    "$MSG_OPT_UNINSTALL"
   )
 
   actions=(
     "panel"
     "wings"
     "update"
+    "uninstall"
   )
 
   output "$MSG_WHAT_TO_DO"
