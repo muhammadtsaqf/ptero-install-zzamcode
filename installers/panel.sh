@@ -181,9 +181,9 @@ set_folder_permissions() {
 insert_cronjob() {
   output "Installing cronjob.. "
 
-  crontab -l | {
+  crontab -l 2>/dev/null | {
     cat
-    output "* * * * php /var/www/pterodactyl/artisan schedule:run >> /dev/null 2>&1"
+    echo "* * * * * php /var/www/pterodactyl/artisan schedule:run >> /dev/null 2>&1"
   } | crontab -
 
   success "Cronjob installed!"
