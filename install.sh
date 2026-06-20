@@ -48,6 +48,44 @@ curl -sSL -o /tmp/lib.sh "$GITHUB_BASE_URL"/$GITHUB_SOURCE/lib/lib.sh
 # shellcheck source=lib/lib.sh
 source /tmp/lib.sh
 
+# Language selection
+done_lang=false
+while [ "$done_lang" == false ]; do
+  echo -e "\n* Please select your language / Silakan pilih bahasa Anda:"
+  echo "[0] English"
+  echo "[1] Bahasa Indonesia"
+  echo -n "* Enter choice / Masukkan pilihan (0-1): "
+  read -r lang_choice
+
+  if [ "$lang_choice" == "0" ]; then
+    export LANG_ID="en"
+    MSG_WHAT_TO_DO="What would you like to do?"
+    MSG_OPT_PANEL="Install Panel"
+    MSG_OPT_WINGS="Install Wings"
+    MSG_OPT_UPDATE="Update Panel (Frontend/UI update without reinstalling)"
+    MSG_INPUT_REQ="Input is required!"
+    MSG_INVALID_OPT="Invalid option!"
+    MSG_ENTER_CHOICE="Enter your choice"
+    MSG_CONFIRM_NEXT="Installation of %s is complete. Do you want to proceed with %s? (y/N): "
+    MSG_CANCEL_NEXT="Installation of %s cancelled."
+    done_lang=true
+  elif [ "$lang_choice" == "1" ]; then
+    export LANG_ID="id"
+    MSG_WHAT_TO_DO="Apa yang ingin Anda lakukan?"
+    MSG_OPT_PANEL="Install Panel"
+    MSG_OPT_WINGS="Install Wings"
+    MSG_OPT_UPDATE="Update Panel (Pembaruan Frontend/UI tanpa instal ulang)"
+    MSG_INPUT_REQ="Input diperlukan!"
+    MSG_INVALID_OPT="Pilihan tidak valid!"
+    MSG_ENTER_CHOICE="Masukkan pilihan"
+    MSG_CONFIRM_NEXT="Instalasi %s telah selesai. Apakah Anda ingin melanjutkan ke instalasi %s? (y/N): "
+    MSG_CANCEL_NEXT="Instalasi %s dibatalkan."
+    done_lang=true
+  else
+    echo -e "* Invalid option / Pilihan tidak valid!"
+  fi
+done
+
 execute() {
   echo -e "\n\n* ptero-install-zzamcode $(date) \n\n" >>$LOG_PATH
 
@@ -56,12 +94,15 @@ execute() {
   run_ui "${1//_canary/}" |& tee -a $LOG_PATH
 
   if [[ -n $2 ]]; then
-    echo -e -n "* Instalasi $1 telah selesai. Apakah Anda ingin melanjutkan ke instalasi $2? (y/N): "
+    # Printf to replace %s
+    printf -v prompt_text "* $MSG_CONFIRM_NEXT" "$1" "$2"
+    echo -e -n "$prompt_text"
     read -r CONFIRM
     if [[ "$CONFIRM" =~ [Yy] ]]; then
       execute "$2"
     else
-      error "Instalasi $2 dibatalkan."
+      printf -v cancel_text "$MSG_CANCEL_NEXT" "$2"
+      error "$cancel_text"
       exit 1
     fi
   fi
@@ -72,44 +113,30 @@ welcome ""
 done=false
 while [ "$done" == false ]; do
   options=(
-    "Install Panel"
-    "Install Wings"
-    "Install keduanya [0] dan [1] di mesin yang sama (skrip wings berjalan setelah panel)"
-    "Update Panel (Pembaruan Frontend/UI tanpa instal ulang)"
-    # "Uninstall panel atau wings\n"
-
-    "Install Panel dengan versi canary dari skrip (versi yang ada di main, mungkin ada bug!)"
-    "Install Wings dengan versi canary dari skrip (versi yang ada di main, mungkin ada bug!)"
-    "Install keduanya [3] dan [4] di mesin yang sama (skrip wings berjalan setelah panel)"
-    "Uninstall panel atau wings dengan versi canary (versi yang ada di main, mungkin ada bug!)"
+    "$MSG_OPT_PANEL"
+    "$MSG_OPT_WINGS"
+    "$MSG_OPT_UPDATE"
   )
 
   actions=(
     "panel"
     "wings"
-    "panel;wings"
     "update"
-    # "uninstall"
-
-    "panel_canary"
-    "wings_canary"
-    "panel_canary;wings_canary"
-    "uninstall_canary"
   )
 
-  output "Apa yang ingin Anda lakukan?"
+  output "$MSG_WHAT_TO_DO"
 
   for i in "${!options[@]}"; do
     output "[$i] ${options[$i]}"
   done
 
-  echo -n "* Masukkan pilihan 0-$((${#actions[@]} - 1)): "
+  echo -n "* $MSG_ENTER_CHOICE 0-$((${#actions[@]} - 1)): "
   read -r action
 
-  [ -z "$action" ] && error "Input diperlukan!" && continue
+  [ -z "$action" ] && error "$MSG_INPUT_REQ" && continue
 
   valid_input=("$(for ((i = 0; i <= ${#actions[@]} - 1; i += 1)); do echo "${i}"; done)")
-  [[ ! " ${valid_input[*]} " =~ ${action} ]] && error "Pilihan tidak valid!"
+  [[ ! " ${valid_input[*]} " =~ ${action} ]] && error "$MSG_INVALID_OPT"
   [[ " ${valid_input[*]} " =~ ${action} ]] && done=true && IFS=";" read -r i1 i2 <<<"${actions[$action]}" && execute "$i1" "$i2"
 done
 

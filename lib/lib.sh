@@ -134,12 +134,21 @@ welcome() {
   echo -e ""
   echo -e "${COLOR_MAGENTA}========================================================================${COLOR_NC}"
   echo -e " ${COLOR_GREEN}>>${COLOR_NC} Pterodactyl Installer by ${COLOR_YELLOW}zzamcode${COLOR_NC} @ $SCRIPT_RELEASE"
-  echo -e " ${COLOR_GREEN}>>${COLOR_NC} Running on $OS version $OS_VER."
   
-  if [ "$1" == "panel" ]; then
-    echo -e " ${COLOR_GREEN}>>${COLOR_NC} Latest pterodactyl/panel is $PTERODACTYL_PANEL_VERSION"
-  elif [ "$1" == "wings" ]; then
-    echo -e " ${COLOR_GREEN}>>${COLOR_NC} Latest pterodactyl/wings is $PTERODACTYL_WINGS_VERSION"
+  if [ "$LANG_ID" == "en" ]; then
+    echo -e " ${COLOR_GREEN}>>${COLOR_NC} Running on $OS version $OS_VER."
+    if [ "$1" == "panel" ]; then
+      echo -e " ${COLOR_GREEN}>>${COLOR_NC} Latest pterodactyl/panel is $PTERODACTYL_PANEL_VERSION"
+    elif [ "$1" == "wings" ]; then
+      echo -e " ${COLOR_GREEN}>>${COLOR_NC} Latest pterodactyl/wings is $PTERODACTYL_WINGS_VERSION"
+    fi
+  else
+    echo -e " ${COLOR_GREEN}>>${COLOR_NC} Berjalan di sistem $OS versi $OS_VER."
+    if [ "$1" == "panel" ]; then
+      echo -e " ${COLOR_GREEN}>>${COLOR_NC} Versi pterodactyl/panel terbaru adalah $PTERODACTYL_PANEL_VERSION"
+    elif [ "$1" == "wings" ]; then
+      echo -e " ${COLOR_GREEN}>>${COLOR_NC} Versi pterodactyl/wings terbaru adalah $PTERODACTYL_WINGS_VERSION"
+    fi
   fi
   echo -e "${COLOR_MAGENTA}========================================================================${COLOR_NC}"
   echo -e ""
