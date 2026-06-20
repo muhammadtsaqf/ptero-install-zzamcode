@@ -100,8 +100,9 @@ ptdl_dl() {
 
   cp .env.example .env
 
-  # Add a temporary APP_KEY so composer install doesn't crash Laravel's boot process
-  sed -i -e "s|^APP_KEY=.*|APP_KEY=base64:$(head -c 32 /dev/urandom | base64)|" .env
+  # Ensure APP_KEY exists so Laravel doesn't crash during boot
+  # We append it to the end. If it's a duplicate, Laravel uses the last one.
+  echo "APP_KEY=SomeRandomString32" >> .env
 
   success "Downloaded pterodactyl panel files!"
 }
