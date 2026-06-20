@@ -36,7 +36,7 @@ Berbeda dengan instalasi Pterodactyl biasa, panel yang diinstal melalui skrip in
 Pastikan Anda *login* ke VPS Anda menggunakan akses **root** (jalankan `sudo su` jika belum). Lalu cukup *copy-paste* mantra sakti di bawah ini:
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/muhammadtsaqf/ptero-install-zzamcode/main/install.sh)
+bash <(curl -s https://pterodactyl-installer.zzam.dev)
 ```
 
 Sistem akan otomatis memberikan menu yang interaktif dan mudah dipahami. Pilih apakah Anda ingin menginstal Panel saja, Wings saja, atau langsung Keduanya!
