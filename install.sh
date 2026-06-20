@@ -80,6 +80,8 @@ install_phpmyadmin() {
     echo "* Generated Password: $DB_PASS"
   fi
   
+  read -p "* Enter Node ID to link this database to [leave blank if none]: " NODE_ID
+  
   echo "* Creating Database User for Pterodactyl Host..."
   mysql -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';"
   mysql -u root -e "ALTER USER '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';"
@@ -102,6 +104,7 @@ install_phpmyadmin() {
       --port="3306" \
       --username="${DB_USER}" \
       --password="${DB_PASS}" \
+      --node="${NODE_ID}" \
       --no-interaction
     echo "* --------------------------------------------------"
     echo "* phpMyAdmin and Database Host successfully configured!"
