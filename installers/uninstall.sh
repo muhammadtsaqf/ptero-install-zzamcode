@@ -88,6 +88,14 @@ rm_services() {
     rm -rf /etc/php-fpm.d/www-pterodactyl.conf
     ;;
   esac
+  
+  if command -v pm2 >/dev/null 2>&1; then
+    output "Stopping and removing WhatsApp Bot from PM2..."
+    pm2 stop pterodactyl-wa-bot >/dev/null 2>&1 || true
+    pm2 delete pterodactyl-wa-bot >/dev/null 2>&1 || true
+    pm2 save >/dev/null 2>&1 || true
+  fi
+  
   success "Removed services."
 }
 
