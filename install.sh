@@ -95,7 +95,6 @@ install_phpmyadmin() {
       --port="3306" \
       --username="${DB_USER}" \
       --password="${DB_PASS}" \
-      --node="1" \
       --no-interaction
     echo "* --------------------------------------------------"
     echo "* phpMyAdmin and Database Host successfully configured!"
