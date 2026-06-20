@@ -1,10 +1,6 @@
 <div align="center">
-  <img src="https://pterodactyl.io/pterodactyl.svg" width="100" alt="Pterodactyl Logo">
   <h1>✨ Ptero Install by zzamcode ✨</h1>
   <p><b>Skrip Instalasi Otomatis Pterodactyl Panel & Wings Terkeren se-Dunia!</b></p>
-  
-  [![Shellcheck](https://github.com/muhammadtsaqf/ptero-install-zzamcode/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/muhammadtsaqf/ptero-install-zzamcode/actions/workflows/shellcheck.yml)
-  [![License: GPL v3](https://img.shields.io/github/license/muhammadtsaqf/ptero-install-zzamcode)](LICENSE)
 </div>
 
 ---
