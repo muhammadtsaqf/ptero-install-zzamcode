@@ -59,6 +59,9 @@ export GITHUB_URL="$GITHUB_BASE_URL/$GITHUB_SOURCE"
 COLOR_YELLOW='\033[1;33m'
 COLOR_GREEN='\033[0;32m'
 COLOR_RED='\033[0;31m'
+COLOR_CYAN='\033[0;36m'
+COLOR_MAGENTA='\033[0;35m'
+COLOR_BLUE='\033[0;34m'
 COLOR_NC='\033[0m'
 
 # email input validation regex
@@ -76,7 +79,7 @@ lib_loaded() {
 # -------------- Visual functions -------------- #
 
 output() {
-  echo -e "* $1"
+  echo -e "${COLOR_CYAN}[INFO]${COLOR_NC} $1"
 }
 
 success() {
@@ -121,21 +124,25 @@ hyperlink() {
 welcome() {
   get_latest_versions
 
-  print_brake 70
-  output "Pterodactyl panel installation script @ $SCRIPT_RELEASE"
-  output ""
-  output "Copyright (C) 2018 - 2026, Vilhelm Prytz, <vilhelm@prytznet.se>"
-  output "https://github.com/pterodactyl-installer/pterodactyl-installer"
-  output ""
-  output "This script is not associated with the official Pterodactyl Project."
-  output ""
-  output "Running $OS version $OS_VER."
+  echo -e ""
+  echo -e "${COLOR_CYAN}  ███████╗███████╗ █████╗ ███╗   ███╗ ██████╗ ██████╗ ██████╗ ███████╗${COLOR_NC}"
+  echo -e "${COLOR_CYAN}  ╚══███╔╝╚══███╔╝██╔══██╗████╗ ████║██╔════╝██╔═══██╗██╔══██╗██╔════╝${COLOR_NC}"
+  echo -e "${COLOR_CYAN}    ███╔╝   ███╔╝ ███████║██╔████╔██║██║     ██║   ██║██║  ██║█████╗  ${COLOR_NC}"
+  echo -e "${COLOR_CYAN}   ███╔╝   ███╔╝  ██╔══██║██║╚██╔╝██║██║     ██║   ██║██║  ██║██╔══╝  ${COLOR_NC}"
+  echo -e "${COLOR_CYAN}  ███████╗███████╗██║  ██║██║ ╚═╝ ██║╚██████╗╚██████╔╝██████╔╝███████╗${COLOR_NC}"
+  echo -e "${COLOR_CYAN}  ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝${COLOR_NC}"
+  echo -e ""
+  echo -e "${COLOR_MAGENTA}========================================================================${COLOR_NC}"
+  echo -e " ${COLOR_GREEN}>>${COLOR_NC} Pterodactyl Installer by ${COLOR_YELLOW}zzamcode${COLOR_NC} @ $SCRIPT_RELEASE"
+  echo -e " ${COLOR_GREEN}>>${COLOR_NC} Running on $OS version $OS_VER."
+  
   if [ "$1" == "panel" ]; then
-    output "Latest pterodactyl/panel is $PTERODACTYL_PANEL_VERSION"
+    echo -e " ${COLOR_GREEN}>>${COLOR_NC} Latest pterodactyl/panel is $PTERODACTYL_PANEL_VERSION"
   elif [ "$1" == "wings" ]; then
-    output "Latest pterodactyl/wings is $PTERODACTYL_WINGS_VERSION"
+    echo -e " ${COLOR_GREEN}>>${COLOR_NC} Latest pterodactyl/wings is $PTERODACTYL_WINGS_VERSION"
   fi
-  print_brake 70
+  echo -e "${COLOR_MAGENTA}========================================================================${COLOR_NC}"
+  echo -e ""
 }
 
 # ---------------- Lib functions --------------- #
