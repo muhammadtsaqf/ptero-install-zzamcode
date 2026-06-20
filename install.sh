@@ -69,8 +69,16 @@ install_phpmyadmin() {
   apt update
   apt install -y mariadb-server phpmyadmin
   
-  DB_USER="panel_db_user"
-  DB_PASS=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16 ; echo '')
+  echo ""
+  echo "* Let's configure the Database Host account."
+  read -p "* Enter Database Username [panel_db_user]: " DB_USER
+  DB_USER=${DB_USER:-panel_db_user}
+  
+  read -p "* Enter Database Password [randomly generated]: " DB_PASS
+  if [ -z "$DB_PASS" ]; then
+    DB_PASS=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16 ; echo '')
+    echo "* Generated Password: $DB_PASS"
+  fi
   
   echo "* Creating Database User for Pterodactyl Host..."
   mysql -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';"
