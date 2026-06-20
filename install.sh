@@ -55,14 +55,56 @@ MSG_OPT_PANEL="Install Panel"
 MSG_OPT_WINGS="Install Wings"
 MSG_OPT_UPDATE="Update Panel (Frontend/UI update without reinstalling)"
 MSG_OPT_UNINSTALL="Uninstall Panel / Wings"
+MSG_OPT_PHPMYADMIN="Install phpMyAdmin & Configure DB Host"
 MSG_INPUT_REQ="Input is required!"
 MSG_INVALID_OPT="Invalid option!"
 MSG_ENTER_CHOICE="Enter your choice"
 MSG_CONFIRM_NEXT="Installation of %s is complete. Do you want to proceed with %s? (y/N): "
 MSG_CANCEL_NEXT="Installation of %s cancelled."
 
+install_phpmyadmin() {
+  echo "* --------------------------------------------------"
+  echo "* Installing phpMyAdmin and MariaDB-Server..."
+  echo "* --------------------------------------------------"
+  apt update
+  apt install -y mariadb-server phpmyadmin
+  
+  DB_USER="panel_db_user"
+  DB_PASS=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16 ; echo '')
+  
+  echo "* Creating Database User for Pterodactyl Host..."
+  mysql -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';"
+  mysql -u root -e "ALTER USER '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASS}';"
+  mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO '${DB_USER}'@'127.0.0.1' WITH GRANT OPTION;"
+  mysql -u root -e "FLUSH PRIVILEGES;"
+  
+  echo "* Automating Pterodactyl Database Host Setup..."
+  if [ -d "/var/www/pterodactyl" ]; then
+    cd /var/www/pterodactyl
+    php artisan p:database-host:make \
+      --name="Localhost MySQL (phpMyAdmin)" \
+      --host="127.0.0.1" \
+      --port="3306" \
+      --username="${DB_USER}" \
+      --password="${DB_PASS}" \
+      --node="1" \
+      --no-interaction
+    echo "* --------------------------------------------------"
+    echo "* phpMyAdmin and Database Host successfully configured!"
+    echo "* --------------------------------------------------"
+  else
+    echo "* Pterodactyl Panel is not installed at /var/www/pterodactyl!"
+    echo "* Please install the Panel first."
+  fi
+}
+
 execute() {
   echo -e "\n\n* ptero-install-zzamcode $(date) \n\n" >>$LOG_PATH
+
+  if [[ "$1" == "phpmyadmin" ]]; then
+    install_phpmyadmin |& tee -a $LOG_PATH
+    return
+  fi
 
   [[ "$1" == *"canary"* ]] && export GITHUB_SOURCE="main" && export SCRIPT_RELEASE="canary"
   update_lib_source
@@ -92,6 +134,7 @@ while [ "$done" == false ]; do
     "$MSG_OPT_WINGS"
     "$MSG_OPT_UPDATE"
     "$MSG_OPT_UNINSTALL"
+    "$MSG_OPT_PHPMYADMIN"
   )
 
   actions=(
@@ -99,6 +142,7 @@ while [ "$done" == false ]; do
     "wings"
     "update"
     "uninstall"
+    "phpmyadmin"
   )
 
   output "$MSG_WHAT_TO_DO"
