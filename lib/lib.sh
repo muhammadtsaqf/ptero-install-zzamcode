@@ -261,6 +261,16 @@ update_repos() {
   case "$OS" in
     ubuntu | debian)
       output "Updating package repositories..."
+      
+      # Stop unattended-upgrades to prevent dpkg lock issues
+      systemctl stop unattended-upgrades >/dev/null 2>&1 || true
+      
+      # Wait for any existing apt/dpkg processes to finish
+      while pidof apt apt-get dpkg unattended-upgrades >/dev/null 2>&1; do
+          echo -e "${COLOR_YELLOW}[WAIT]${COLOR_NC} Menunggu proses sistem (apt/dpkg) di background selesai... (Mohon tunggu)"
+          sleep 5
+      done
+
       if ! apt-get update -y $args; then
         error "Failed to update repositories."
         return 1
@@ -290,6 +300,15 @@ install_packages() {
   # Eval needed for proper expansion of arguments
   case "$OS" in
   ubuntu | debian)
+    # Stop unattended-upgrades to prevent dpkg lock issues
+    systemctl stop unattended-upgrades >/dev/null 2>&1 || true
+    
+    # Wait for any existing apt/dpkg processes to finish
+    while pidof apt apt-get dpkg unattended-upgrades >/dev/null 2>&1; do
+        echo -e "${COLOR_YELLOW}[WAIT]${COLOR_NC} Menunggu proses sistem (apt/dpkg) di background selesai... (Mohon tunggu)"
+        sleep 5
+    done
+    
     eval apt-get -y $args install "$1"
     ;;
   rocky | almalinux)
