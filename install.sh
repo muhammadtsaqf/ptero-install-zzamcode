@@ -86,6 +86,13 @@ install_phpmyadmin() {
   mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO '${DB_USER}'@'127.0.0.1' WITH GRANT OPTION;"
   mysql -u root -e "FLUSH PRIVILEGES;"
   
+  echo "* Exposing phpMyAdmin to the web..."
+  if [ -d "/var/www/pterodactyl/public" ]; then
+    rm -rf /var/www/pterodactyl/public/phpmyadmin
+    ln -s /usr/share/phpmyadmin /var/www/pterodactyl/public/phpmyadmin
+    chown -R www-data:www-data /var/www/pterodactyl/public/phpmyadmin || true
+  fi
+  
   echo "* Automating Pterodactyl Database Host Setup..."
   if [ -d "/var/www/pterodactyl" ]; then
     cd /var/www/pterodactyl
