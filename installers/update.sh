@@ -42,8 +42,14 @@ perform_update() {
   
   cd /var/www/pterodactyl || exit
 
+  # Tentukan biner PHP yang tepat (gunakan php8.3 jika tersedia agar tidak bentrok dengan PHP 8.5 bawaan Ubuntu)
+  PHP_EXEC="php"
+  if command -v php8.3 >/dev/null 2>&1; then
+    PHP_EXEC="php8.3"
+  fi
+
   output "Mematikan panel sementara (Maintenance Mode)..."
-  php artisan down || true
+  $PHP_EXEC artisan down || true
 
   output "Mengunduh rilis panel terbaru..."
   curl -L -o panel.tar.gz "$PANEL_DL_URL"
@@ -53,17 +59,17 @@ perform_update() {
   output "Memperbarui dependensi Composer..."
   # Tentukan PATH agar command berjalan di RHEL-based OS
   [ "$OS" == "rocky" ] || [ "$OS" == "almalinux" ] && export PATH=/usr/local/bin:$PATH
-  COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader
+  COMPOSER_ALLOW_SUPERUSER=1 $PHP_EXEC /usr/local/bin/composer install --no-dev --optimize-autoloader || COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
   output "Membersihkan cache tampilan dan konfigurasi..."
-  php artisan view:clear
-  php artisan config:clear
+  $PHP_EXEC artisan view:clear
+  $PHP_EXEC artisan config:clear
 
   output "Menjalankan migrasi database..."
-  php artisan migrate --seed --force
+  $PHP_EXEC artisan migrate --seed --force
 
   output "Membuat storage symlink..."
-  php artisan storage:link || true
+  $PHP_EXEC artisan storage:link || true
 
   output "Mengembalikan izin kepemilikan file..."
   case "$OS" in
@@ -81,7 +87,7 @@ perform_update() {
   fi
 
   output "Me-restart queue workers..."
-  php artisan queue:restart || true
+  $PHP_EXEC artisan queue:restart || true
 
   output "Memperbarui WhatsApp Bot..."
   if ! command -v node >/dev/null 2>&1; then
@@ -104,7 +110,7 @@ perform_update() {
   fi
 
   output "Menghidupkan panel kembali..."
-  php artisan up
+  $PHP_EXEC artisan up
 
   success "Panel berhasil diperbarui!"
   return 0
