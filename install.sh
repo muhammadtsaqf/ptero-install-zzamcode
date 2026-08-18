@@ -240,17 +240,19 @@ while [ "$done" == false ]; do
   output "$MSG_WHAT_TO_DO"
 
   for i in "${!options[@]}"; do
-    output "[$i] ${options[$i]}"
+    output "[$((i + 1))] ${options[$i]}"
   done
 
-  echo -n "* $MSG_ENTER_CHOICE 0-$((${#actions[@]} - 1)): "
+  echo -n "* $MSG_ENTER_CHOICE 1-${#actions[@]}: "
   read -r action
 
   [ -z "$action" ] && error "$MSG_INPUT_REQ" && continue
 
-  valid_input=("$(for ((i = 0; i <= ${#actions[@]} - 1; i += 1)); do echo "${i}"; done)")
-  [[ ! " ${valid_input[*]} " =~ ${action} ]] && error "$MSG_INVALID_OPT"
-  [[ " ${valid_input[*]} " =~ ${action} ]] && done=true && IFS=";" read -r i1 i2 <<<"${actions[$action]}" && execute "$i1" "$i2"
+  valid_input=("$(for ((i = 1; i <= ${#actions[@]}; i += 1)); do echo "${i}"; done)")
+  [[ ! " ${valid_input[*]} " =~ ${action} ]] && error "$MSG_INVALID_OPT" && continue
+  
+  index=$((action - 1))
+  done=true && IFS=";" read -r i1 i2 <<<"${actions[$index]}" && execute "$i1" "$i2"
 done
 
 # Remove lib.sh, so next time the script is run the, newest version is downloaded.
