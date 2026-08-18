@@ -114,6 +114,21 @@ install_composer_deps() {
   success "Installed composer dependencies!"
 }
 
+build_frontend() {
+  output "Installing frontend dependencies and building assets.."
+
+  # Install yarn if not present
+  if ! command -v yarn >/dev/null 2>&1; then
+    npm install -g yarn
+  fi
+
+  cd /var/www/pterodactyl || exit
+  yarn install --frozen-lockfile || yarn install || true
+  yarn build:production || true
+
+  success "Frontend assets built!"
+}
+
 # Configure environment
 configure() {
   output "Configuring environment.."
@@ -326,7 +341,8 @@ dep_install() {
       nginx \
       redis-server \
       zip unzip tar \
-      git cron"
+      git cron \
+      nodejs npm"
 
     phpenmod -v 8.3 mbstring || phpenmod mbstring || true
 
@@ -458,6 +474,7 @@ perform_install() {
   create_db_user "$MYSQL_USER" "$MYSQL_PASSWORD"
   create_db "$MYSQL_DB" "$MYSQL_USER"
   configure
+  build_frontend
   set_folder_permissions
   insert_cronjob
   install_pteroq

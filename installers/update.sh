@@ -92,6 +92,18 @@ perform_update() {
   output "Menjalankan migrasi database..."
   $PHP_EXEC artisan migrate --seed --force
 
+  output "Memperbarui/membangun frontend React (Web Assets)..."
+  if ! command -v yarn >/dev/null 2>&1; then
+    npm install -g yarn 2>/dev/null || true
+  fi
+  if command -v yarn >/dev/null 2>&1; then
+    yarn install --frozen-lockfile || yarn install || true
+    yarn build:production || true
+  elif command -v npm >/dev/null 2>&1; then
+    npm install || true
+    npm run build:production || true
+  fi
+
   output "Membuat storage symlink..."
   $PHP_EXEC artisan storage:link || true
 
