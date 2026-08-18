@@ -99,25 +99,39 @@ install_phpmyadmin() {
   # Create phpMyAdmin autologin.php script for Pterodactyl SSO
   cat << 'EOF' > /usr/share/phpmyadmin/autologin.php
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_name('SignonSession');
-    session_start();
+// Clear signon loop if accessed directly via GET
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_name('SignonSession');
+        session_start();
+    }
+    if (isset($_SESSION['PMA_single_signon_user'])) {
+        // Already authenticated, proceed to phpmyadmin index
+        header('Location: index.php?route=/');
+        exit;
+    }
+    header('Location: index.php');
+    exit;
 }
 
 $user = $_POST['pma_username'] ?? $_POST['input_username'] ?? '';
 $pass = $_POST['pma_password'] ?? $_POST['input_password'] ?? '';
 
 if (!empty($user) && !empty($pass)) {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_name('SignonSession');
+        session_start();
+    }
     $_SESSION['PMA_single_signon_user'] = $user;
     $_SESSION['PMA_single_signon_password'] = $pass;
     $_SESSION['PMA_single_signon_host'] = '127.0.0.1';
     $_SESSION['PMA_single_signon_port'] = '3306';
     session_write_close();
+
     header('Location: index.php?route=/');
     exit;
 }
 
-// Fallback if accessed without credentials
 header('Location: index.php');
 exit;
 EOF
@@ -130,7 +144,7 @@ EOF
 $i = 1;
 $cfg['Servers'][$i]['auth_type'] = 'signon';
 $cfg['Servers'][$i]['SignonSession'] = 'SignonSession';
-$cfg['Servers'][$i]['SignonURL'] = '/phpmyadmin/autologin.php';
+$cfg['Servers'][$i]['SignonURL'] = '/phpmyadmin/index.php';
 EOF
   fi
   
