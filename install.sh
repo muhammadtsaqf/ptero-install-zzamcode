@@ -151,7 +151,7 @@ EOF
       --username="${DB_USER}" \
       --password="${DB_PASS}" \
       --node="${NODE_ID}" \
-      --no-interaction
+      --no-interaction || true
     echo "* --------------------------------------------------"
     echo "* phpMyAdmin and Database Host successfully configured!"
     echo "* --------------------------------------------------"
