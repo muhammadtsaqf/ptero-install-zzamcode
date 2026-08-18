@@ -63,6 +63,12 @@ MSG_CONFIRM_NEXT="Installation of %s is complete. Do you want to proceed with %s
 MSG_CANCEL_NEXT="Installation of %s cancelled."
 
 install_phpmyadmin() {
+  if [ ! -d "/var/www/pterodactyl" ]; then
+    echo "* Pterodactyl Panel is not installed at /var/www/pterodactyl!"
+    echo "* Please install the Panel first."
+    return 1
+  fi
+
   echo "* --------------------------------------------------"
   echo "* Installing phpMyAdmin and MariaDB-Server..."
   echo "* --------------------------------------------------"
@@ -182,11 +188,6 @@ EOF
   echo "* --------------------------------------------------"
   echo "* phpMyAdmin and Database Host successfully configured!"
   echo "* --------------------------------------------------"
-    echo "* --------------------------------------------------"
-  else
-    echo "* Pterodactyl Panel is not installed at /var/www/pterodactyl!"
-    echo "* Please install the Panel first."
-  fi
 }
 
 execute() {
