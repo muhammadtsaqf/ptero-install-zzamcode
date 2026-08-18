@@ -1,75 +1,119 @@
 <div align="center">
-  <h1>✨ Ptero Install by zzamcode ✨</h1>
-  <p><b>Skrip Instalasi Otomatis Pterodactyl Panel & Wings Terkeren se-Dunia!</b></p>
+
+# ⚡ Ptero Install by zzamcode
+
+**The Ultimate Automated Installer for Pterodactyl Panel & Wings**
+
+[![OS Support](https://img.shields.io/badge/OS-Ubuntu%20%7C%20Debian%20%7C%20AlmaLinux%20%7C%20Rocky-blue?style=for-the-badge&logo=linux)](https://pterodactyl-installer.zzam.dev)
+[![PHP Version](https://img.shields.io/badge/PHP-8.3-777BB4?style=for-the-badge&logo=php)](https://pterodactyl-installer.zzam.dev)
+[![Pterodactyl](https://img.shields.io/badge/Pterodactyl-v1.11+-00A6EF?style=for-the-badge&logo=pterodactyl)](https://pterodactyl-installer.zzam.dev)
+[![Cloudflare CDN](https://img.shields.io/badge/CDN-Cloudflare%20Pages-F38020?style=for-the-badge&logo=cloudflare)](https://pterodactyl-installer.zzam.dev)
+
+---
+
 </div>
 
----
+## 📌 Overview
 
-## 🚀 Apa itu `ptero-install-zzamcode`?
-Ini bukan sembarang skrip instalasi! Ini adalah versi modifikasi super canggih dari skrip instalasi Pterodactyl resmi. Dibangun khusus untuk memanjakan administrator server dengan fitur-fitur eksklusif yang **tidak akan Anda temukan di panel standar Pterodactyl**.
-
-Semua instalasi, konfigurasi database, integrasi SSL/HTTPS, hingga pengaturan cronjob berjalan 100% secara otomatis!
-
-## 🌟 Fitur Eksklusif (Hanya ada di versi zzamcode)
-
-Berbeda dengan instalasi Pterodactyl biasa, panel yang diinstal melalui skrip ini telah dilengkapi dengan modul rahasia kelas atas:
-
-- 🤖 **Integrasi WhatsApp Bot Server Management (Baileys)**: Kendalikan server Anda langsung dari WhatsApp! Mulai dari `start`, `stop`, `restart`, hingga cek status server hanya lewat chat.
-- 💻 **Real-Time Terminal PM2 di Admin Panel**: Pantau langsung *log* WhatsApp Bot Anda dari dalam Pterodactyl Admin UI layaknya seorang hacker sejati (Terminal Style!).
-- ⚡ **Smart Phone Matching**: Sistem cerdas yang mengabaikan awalan `+`, `-`, spasi, bahkan bisa menerjemahkan `08...` ke `628...` secara otomatis antara database Panel dan WhatsApp Meta.
-- 👀 **Auto-Read & Auto-Online Presence**: Bot WhatsApp tampil *Online* dan ceklis biru super responsif bagaikan CS profesional 24/7.
-- 🧹 **Manajemen Sesi Bot**: Fitur Hapus Session, Start, dan Stop langsung dari antarmuka Web Panel tanpa perlu menyentuh SSH/Linux Anda sama sekali!
-- 🎨 **Tampilan Installer Estetik**: Proses instalasi dihiasi dengan logo ASCII art `zzamcode` yang memanjakan mata dan warna-warni cyberpunk.
-
-## 📦 Fitur Standar
-
-- Instalasi otomatis **Pterodactyl Panel** (beserta dependensi, database, cronjob, dan NGINX).
-- Instalasi otomatis **Pterodactyl Wings** (Docker, systemd).
-- Konfigurasi otomatis Let's Encrypt (Sertifikat SSL/HTTPS gratis).
-- Konfigurasi otomatis Firewall (UFW / FirewallD).
-- Fitur uninstalasi total jika Anda ingin menghapus semuanya.
+**`ptero-install-zzamcode`** adalah skrip instalasi otomatis berkinerja tinggi untuk **Pterodactyl Panel** dan **Pterodactyl Wings**. Didesain khusus untuk menyederhanakan proses instalasi kompleks menjadi hitungan detik dengan dukungan penuh **PHP 8.3**, **WhatsApp Bot Server Management**, **Real-time PM2 Terminal**, **Cloudflare SSL**, dan **Auto-Seeded Multifungsi Egg**.
 
 ---
 
-## 🛠️ Cara Menggunakan Skrip Instalasi
+## 🌟 Fitur Utama & Keunggulan
 
-Pastikan Anda *login* ke VPS Anda menggunakan akses **root** (jalankan `sudo su` jika belum). Lalu cukup *copy-paste* mantra sakti di bawah ini:
+### 🚀 1. One-Click Automated Deployment
+- **Panel & Wings Setup**: Menginstal dependensi sistem, NGINX Web Server, MariaDB Database, Redis Cache, Composer, Pterodactyl Queue Worker, dan Systemd Services secara otomatis.
+- **SSL / HTTPS Automation**: Terintegrasi langsung dengan Let's Encrypt Certbot dan Cloudflare DNS / Web server untuk sertifikat SSL gratis & terenkripsi.
+- **Firewall Auto-Config**: Konfigurasi otomatis UFW (Debian/Ubuntu) dan FirewallD (RHEL/Rocky/AlmaLinux) untuk keamanan port server.
+
+### 🤖 2. WhatsApp Bot Integration (Baileys)
+- **Remote Control via WhatsApp**: Kendalikan status server (Start, Stop, Restart, Status, Stats) langsung melalui pesan WhatsApp.
+- **Real-Time PM2 Log Terminal**: Monitoring log bot WhatsApp secara live dari dalam Admin UI Panel.
+- **Smart Phone Matcher**: Deteksi otomatis format nomor HP (+62, 08xx, spasi) antara Database Panel dan Meta WhatsApp.
+
+### 🧩 3. Auto-Seeded Multifungsi Egg
+- **Single Egg Multi-Environment**: Egg serbaguna bawaan installer yang mendukung:
+  - **Node.js**: 16, 17, 18, 19, 20, 21, 22, 23
+  - **Python**: 3.9, 3.10, 3.11, 3.12, 3.13 (via Pyenv)
+  - **PHP**: 7.4, 8.0, 8.1, 8.2, 8.3, 8.4
+  - **Golang**: 1.21, 1.22, 1.23, 1.24
+  - **Java (JDK Temurin)**: 8, 11, 17, 21
+  - **Tools Bawaan**: Bun, PM2, FFmpeg, ImageMagick, Puppeteer/Chromium Headless, Redis Local, MariaDB Local, dan Cloudflare Tunnel Otomatis.
+
+### 🔒 4. Private Panel Repository Architecture
+- Panel utama disimpan dalam repository private `pterodactyl-panel-zzamcode` untuk keamanan source code.
+- Build otomatis via **GitHub Actions** disinkronkan langsung ke CDN Cloudflare (`pterodactyl-installer.zzam.dev`) sehingga proses unduh selalu cepat, stabil, dan 100% terkini.
+
+---
+
+## 💻 Cara Menggunakan (Quick Start)
+
+Jalankan perintah di bawah ini pada VPS berbasis Linux milik Anda (kebutuhan akses **root**):
 
 ```bash
-bash <(curl -s https://pterodactyl-installer.zzam.dev)
+bash <(curl -sSL https://pterodactyl-installer.zzam.dev)
 ```
 
-Sistem akan otomatis memberikan menu yang interaktif dan mudah dipahami. Pilih apakah Anda ingin menginstal Panel saja, Wings saja, atau langsung Keduanya!
+> 💡 **Menu Pilihan Installer:**
+> 1. `[0]` Install Pterodactyl Panel
+> 2. `[1]` Install Pterodactyl Wings
+> 3. `[2]` Install Panel & Wings (Satu VPS)
+> 4. `[3]` Update Panel / Update Script
+> 5. `[4]` Uninstall Pterodactyl Completely
 
 ---
 
 ## 🖥️ Sistem Operasi yang Didukung
 
-Demi performa maksimal dan bebas error, disarankan menggunakan sistem operasi **terbaru**.
-
-| Sistem Operasi | Dukungan           | Keterangan Tambahan |
-| -------------- | ------------------ | ------------------- |
-| **Ubuntu** 22.04 / 24.04 / 26.04 | ✅ Sangat Disarankan | Menggunakan PHP 8.3 |
-| **Debian** 10 / 11 / 12 / 13 | ✅ Didukung Penuh | Menggunakan PHP 8.3 |
-| **Rocky Linux** 8 / 9 | ✅ Didukung Penuh | Menggunakan PHP 8.3 |
-| **AlmaLinux** 8 / 9 | ✅ Didukung Penuh | Menggunakan PHP 8.3 |
-
-*(Ubuntu 20.04 ke bawah atau CentOS 7 ke bawah sudah tidak lagi didukung demi alasan keamanan).*
+| Sistem Operasi | Status Support | Versi PHP CLI | Catatan |
+| :--- | :---: | :---: | :--- |
+| **Ubuntu** 24.04 LTS (Noble Numbat) | 🟢 Recommended | PHP 8.3 | Performa & Stabilitas Terbaik |
+| **Ubuntu** 22.04 LTS (Jammy Jellyfish) | 🟢 Supported | PHP 8.3 | Stabil & Teruji |
+| **Debian** 12 (Bookworm) / 13 (Trixie) | 🟢 Supported | PHP 8.3 | Sangat Ringan |
+| **Debian** 11 (Bullseye) | 🟢 Supported | PHP 8.3 | Stabil |
+| **AlmaLinux** 9 / 8 | 🟡 Supported | PHP 8.3 | RHEL Enterprise Family |
+| **Rocky Linux** 9 / 8 | 🟡 Supported | PHP 8.3 | RHEL Enterprise Family |
 
 ---
 
-## 🛡️ Pengaturan Firewall Otomatis
-Tidak paham cara setting *Port* Linux? Tenang saja! 
-Di tengah instalasi, skrip akan bertanya apakah Anda ingin mengatur firewall. **Sangat disarankan untuk memilih YA (`Y`)**. Skrip akan membuka port 80, 443 (Web) dan port Wings (8080, 2022) secara presisi dan aman.
+## 🌐 Kebutuhan Port & Firewall
 
-## 🤝 Bantuan dan Dukungan
-Repositori ini dikembangkan dan dirawat langsung oleh **zzamcode**. 
-Jika Anda menemui *bug* keren atau masalah teknis terkait instalasi bot ini, jangan sungkan untuk membuka fitur **Issues** di repositori ini.
+| Port | Protokol | Fungsi | Deskripsi |
+| :---: | :---: | :--- | :--- |
+| **80** | TCP | HTTP Web Server | Diperlukan untuk sertifikat SSL Let's Encrypt |
+| **443** | TCP | HTTPS Web Server | Akses Pterodactyl Panel UI (Encrypted) |
+| **8080** | TCP | Wings HTTP API | Komunikasi antara Panel dan Daemon Wings |
+| **2022** | TCP | Wings SFTP | Akses File Server via SFTP Client |
 
 ---
 
-### 💖 Kontributor
-Hak Cipta (C) 2018 - 2026, Vilhelm Prytz, dan para kontributor awal.
-Dimodifikasi dengan sentuhan ajaib untuk komunitas lokal oleh **zzamcode**.
+## 🛠️ Perintah Berguna Pasca Instalasi
 
-> *"Make server management feel like magic!"*
+Jika Anda perlu melakukan tindakan administratif setelah instalasi:
+
+```bash
+# Membuat akun Administrator baru
+php /var/www/pterodactyl/artisan ptero:user
+
+# Menjalankan seeder Nest & Egg manual
+php /var/www/pterodactyl/artisan db:seed --class=NestSeeder
+php /var/www/pterodactyl/artisan db:seed --class=EggSeeder
+
+# Restart Queue Worker Panel
+systemctl restart pteroq.service
+
+# Restart Wings Daemon
+systemctl restart wings
+```
+
+---
+
+## 📜 Lisensi & Kredit
+
+- **Project Core**: Dikembangkan berbasis `pterodactyl-installer` oleh **Vilhelm Prytz** dan para kontributor open-source.
+- **Custom Enhancements & Maintainer**: Dimodifikasi & Dikembangkan oleh **zzamcode** ([@muhammadtsaqf](https://github.com/muhammadtsaqf)).
+- **Lisensi**: Distributed under the [GNU General Public License v3.0](LICENSE).
+
+<div align="center">
+  <p>Made with ❤️ by <b>zzamcode</b> for the Server Administration Community.</p>
+</div>
