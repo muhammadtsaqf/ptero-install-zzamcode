@@ -364,9 +364,13 @@ dep_install() {
 # --------------- Other functions -------------- #
 
 firewall_ports() {
-  output "Opening ports: 22 (SSH), 80 (HTTP) and 443 (HTTPS)"
+  output "Opening ports: SSH (detecting active SSH port), 80 (HTTP) and 443 (HTTPS)"
 
-  firewall_allow_ports "22 80 443"
+  local ssh_port
+  ssh_port=$(ss -tulpn 2>/dev/null | grep -E 'sshd|sshd-session' | grep -oP ':\K[0-9]+' | head -n1)
+  [ -z "$ssh_port" ] && ssh_port="22"
+
+  firewall_allow_ports "22 80 443 $ssh_port"
 
   success "Firewall ports opened!"
 }
