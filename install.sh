@@ -89,11 +89,49 @@ install_phpmyadmin() {
   mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO '${DB_USER}'@'%' WITH GRANT OPTION;"
   mysql -u root -e "FLUSH PRIVILEGES;"
   
-  echo "* Exposing phpMyAdmin to the web..."
+  echo "* Exposing phpMyAdmin to the web and configuring Auto-Login SSO..."
   if [ -d "/var/www/pterodactyl/public" ]; then
     rm -rf /var/www/pterodactyl/public/phpmyadmin
     ln -s /usr/share/phpmyadmin /var/www/pterodactyl/public/phpmyadmin
     chown -R www-data:www-data /var/www/pterodactyl/public/phpmyadmin || true
+  fi
+
+  # Create phpMyAdmin autologin.php script for Pterodactyl SSO
+  cat << 'EOF' > /usr/share/phpmyadmin/autologin.php
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_name('SignonSession');
+    session_start();
+}
+
+$user = $_POST['pma_username'] ?? $_POST['input_username'] ?? '';
+$pass = $_POST['pma_password'] ?? $_POST['input_password'] ?? '';
+
+if (!empty($user) && !empty($pass)) {
+    $_SESSION['PMA_single_signon_user'] = $user;
+    $_SESSION['PMA_single_signon_password'] = $pass;
+    $_SESSION['PMA_single_signon_host'] = '127.0.0.1';
+    $_SESSION['PMA_single_signon_port'] = '3306';
+    session_write_close();
+    header('Location: index.php?route=/');
+    exit;
+}
+
+// Fallback if accessed without credentials
+header('Location: index.php');
+exit;
+EOF
+  chmod 644 /usr/share/phpmyadmin/autologin.php
+
+  # Configure phpMyAdmin to enable signon authentication
+  if [ -d "/etc/phpmyadmin/conf.d" ]; then
+    cat << 'EOF' > /etc/phpmyadmin/conf.d/zzamcode-sso.inc.php
+<?php
+$i = 1;
+$cfg['Servers'][$i]['auth_type'] = 'signon';
+$cfg['Servers'][$i]['SignonSession'] = 'SignonSession';
+$cfg['Servers'][$i]['SignonURL'] = '/phpmyadmin/autologin.php';
+EOF
   fi
   
   echo "* Automating Pterodactyl Database Host Setup..."
