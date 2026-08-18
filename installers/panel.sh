@@ -328,7 +328,7 @@ dep_install() {
       zip unzip tar \
       git cron"
 
-    phpenmod mbstring || true
+    phpenmod -v 8.3 mbstring || phpenmod mbstring || true
 
     [ "$CONFIGURE_LETSENCRYPT" == true ] && install_packages "certbot python3-certbot-nginx"
 
