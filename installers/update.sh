@@ -75,6 +75,11 @@ perform_update() {
     ;;
   esac
 
+  output "Memastikan variabel WA_BOT_SECRET ada di .env..."
+  if ! grep -q "^WA_BOT_SECRET=" /var/www/pterodactyl/.env; then
+    echo "WA_BOT_SECRET=pterodactyl_wa_secret" >> /var/www/pterodactyl/.env
+  fi
+
   output "Me-restart queue workers..."
   php artisan queue:restart || true
 
@@ -91,9 +96,10 @@ perform_update() {
 
   if [ -d "/var/www/pterodactyl/whatsapp-bot" ]; then
     cd /var/www/pterodactyl/whatsapp-bot
-    npm install || true
+    npm install --omit=dev || npm install || true
     pm2 restart pterodactyl-wa-bot || pm2 start index.js --name "pterodactyl-wa-bot" || true
     pm2 save || true
+    pm2 startup || true
     cd /var/www/pterodactyl
   fi
 

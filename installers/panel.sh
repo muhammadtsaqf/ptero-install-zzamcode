@@ -162,6 +162,11 @@ configure() {
   # Create storage link
   php artisan storage:link || true
 
+  # Ensure WA_BOT_SECRET environment variable is set
+  if ! grep -q "^WA_BOT_SECRET=" /var/www/pterodactyl/.env; then
+    echo "WA_BOT_SECRET=pterodactyl_wa_secret" >> /var/www/pterodactyl/.env
+  fi
+
   success "Configured environment!"
 }
 
@@ -231,9 +236,11 @@ install_whatsapp_bot() {
 
   if [ -d "/var/www/pterodactyl/whatsapp-bot" ]; then
     cd /var/www/pterodactyl/whatsapp-bot
-    npm install || true
+    npm install --omit=dev || npm install || true
+    pm2 delete pterodactyl-wa-bot >/dev/null 2>&1 || true
     pm2 start index.js --name "pterodactyl-wa-bot" || true
     pm2 save || true
+    pm2 startup || true
     cd /var/www/pterodactyl
   fi
 
