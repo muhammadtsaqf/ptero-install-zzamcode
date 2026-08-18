@@ -42,7 +42,29 @@ perform_update() {
   
   cd /var/www/pterodactyl || exit
 
-  # Tentukan biner PHP yang tepat (gunakan php8.3 jika tersedia agar tidak bentrok dengan PHP 8.5 bawaan Ubuntu)
+  # ============================================================
+  # PENTING: Pastikan PHP 8.3 menjadi CLI default di sistem.
+  # Ubuntu 24.04+ bisa punya PHP 8.5 sebagai default, tapi
+  # Pterodactyl Panel membutuhkan PHP 8.3 beserta ekstensinya.
+  # ============================================================
+  if command -v php8.3 >/dev/null 2>&1; then
+    output "Mengatur PHP 8.3 sebagai CLI default..."
+    update-alternatives --set php /usr/bin/php8.3 2>/dev/null || true
+
+    # Pastikan semua ekstensi PHP 8.3 yang dibutuhkan terinstal
+    output "Memastikan ekstensi PHP 8.3 lengkap..."
+    case "$OS" in
+    debian | ubuntu)
+      apt-get install -y php8.3-{cli,common,gd,mysql,mbstring,bcmath,xml,fpm,curl,zip} >/dev/null 2>&1 || true
+      phpenmod -v 8.3 mbstring bcmath xml mysql zip >/dev/null 2>&1 || true
+      ;;
+    rocky | almalinux)
+      dnf install -y php php-{common,fpm,cli,json,mysqlnd,gd,mbstring,pdo,zip,bcmath,dom,opcache,posix,xml} >/dev/null 2>&1 || true
+      ;;
+    esac
+  fi
+
+  # Tentukan biner PHP yang tepat
   PHP_EXEC="php"
   if command -v php8.3 >/dev/null 2>&1; then
     PHP_EXEC="php8.3"
@@ -59,7 +81,9 @@ perform_update() {
   output "Memperbarui dependensi Composer..."
   # Tentukan PATH agar command berjalan di RHEL-based OS
   [ "$OS" == "rocky" ] || [ "$OS" == "almalinux" ] && export PATH=/usr/local/bin:$PATH
-  COMPOSER_ALLOW_SUPERUSER=1 $PHP_EXEC /usr/local/bin/composer install --no-dev --optimize-autoloader || COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --ignore-platform-reqs
+  COMPOSER_ALLOW_SUPERUSER=1 $PHP_EXEC /usr/local/bin/composer install --no-dev --optimize-autoloader || \
+  COMPOSER_ALLOW_SUPERUSER=1 $PHP_EXEC /usr/local/bin/composer install --no-dev --optimize-autoloader --ignore-platform-reqs || \
+  COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 
   output "Membersihkan cache tampilan dan konfigurasi..."
   $PHP_EXEC artisan view:clear
