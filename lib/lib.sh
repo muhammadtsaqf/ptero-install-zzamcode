@@ -218,10 +218,11 @@ create_db_user() {
 
   output "Creating database user $db_user_name..."
 
-  mariadb -u root -e "CREATE USER '$db_user_name'@'$db_host' IDENTIFIED BY '$db_user_password';"
+  mariadb -u root -e "CREATE USER IF NOT EXISTS '$db_user_name'@'$db_host' IDENTIFIED BY '$db_user_password';"
+  mariadb -u root -e "ALTER USER '$db_user_name'@'$db_host' IDENTIFIED BY '$db_user_password';"
   mariadb -u root -e "FLUSH PRIVILEGES;"
 
-  output "Database user $db_user_name created"
+  output "Database user $db_user_name created or updated"
 }
 
 grant_all_privileges() {
@@ -245,7 +246,7 @@ create_db() {
 
   output "Creating database $db_name..."
 
-  mariadb -u root -e "CREATE DATABASE $db_name;"
+  mariadb -u root -e "CREATE DATABASE IF NOT EXISTS $db_name;"
   grant_all_privileges "$db_name" "$db_user_name" "$db_host"
 
   output "Database $db_name created"
