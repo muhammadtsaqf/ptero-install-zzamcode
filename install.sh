@@ -67,7 +67,8 @@ install_phpmyadmin() {
   echo "* Installing phpMyAdmin and MariaDB-Server..."
   echo "* --------------------------------------------------"
   apt update
-  apt install -y mariadb-server phpmyadmin
+  apt install -y mariadb-server phpmyadmin php8.3-mbstring php-mbstring
+  phpenmod -v 8.3 mbstring || phpenmod mbstring || true
   
   echo ""
   echo "* Let's configure the Database Host account."
@@ -98,7 +99,14 @@ install_phpmyadmin() {
   echo "* Automating Pterodactyl Database Host Setup..."
   if [ -d "/var/www/pterodactyl" ]; then
     cd /var/www/pterodactyl
-    php artisan p:database-host:make \
+    
+    # Ensure PHP 8.3 binary is used if available to avoid PHP 8.5/CLI version mismatches
+    local PHP_BIN="php"
+    if command -v php8.3 >/dev/null 2>&1; then
+      PHP_BIN="php8.3"
+    fi
+
+    $PHP_BIN artisan p:database-host:make \
       --name="Localhost MySQL (phpMyAdmin)" \
       --host="127.0.0.1" \
       --port="3306" \
