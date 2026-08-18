@@ -144,14 +144,23 @@ EOF
       PHP_BIN="php8.3"
     fi
 
-    $PHP_BIN artisan p:database-host:make \
-      --name="Localhost MySQL (phpMyAdmin)" \
-      --host="127.0.0.1" \
-      --port="3306" \
-      --username="${DB_USER}" \
-      --password="${DB_PASS}" \
-      --node="${NODE_ID}" \
-      --no-interaction || true
+    # Check if a localhost Database Host already exists in Pterodactyl to avoid duplicate entries
+    local EXISTING_HOST_ID=$($PHP_BIN artisan tinker --execute="echo \Pterodactyl\Models\DatabaseHost::where('host', '127.0.0.1')->orWhere('host', 'localhost')->value('id') ?? '';" 2>/dev/null | grep -E '^[0-9]+$' | head -n 1 || true)
+
+    if [ -n "$EXISTING_HOST_ID" ]; then
+      echo "* Localhost Database Host already exists (ID: ${EXISTING_HOST_ID}). Updating credentials..."
+      $PHP_BIN artisan tinker --execute="\$h = \Pterodactyl\Models\DatabaseHost::find(${EXISTING_HOST_ID}); if (\$h) { \$h->update(['username' => '${DB_USER}', 'password' => '${DB_PASS}', 'node_id' => ${NODE_ID:-null}]); }" >/dev/null 2>&1 || true
+    else
+      echo "* Creating new Localhost Database Host entry..."
+      $PHP_BIN artisan p:database-host:make \
+        --name="Localhost MySQL (phpMyAdmin)" \
+        --host="127.0.0.1" \
+        --port="3306" \
+        --username="${DB_USER}" \
+        --password="${DB_PASS}" \
+        --node="${NODE_ID}" \
+        --no-interaction || true
+    fi
     echo "* --------------------------------------------------"
     echo "* phpMyAdmin and Database Host successfully configured!"
     echo "* --------------------------------------------------"
