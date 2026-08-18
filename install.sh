@@ -69,25 +69,56 @@ install_phpmyadmin() {
   apt update
   apt install -y mariadb-server phpmyadmin php8.3-mbstring php-mbstring
   phpenmod -v 8.3 mbstring || phpenmod mbstring || true
-  
-  echo ""
-  echo "* Let's configure the Database Host account."
-  read -p "* Enter Database Username [panel_db_user]: " DB_USER
-  DB_USER=${DB_USER:-panel_db_user}
-  
-  read -p "* Enter Database Password [randomly generated]: " DB_PASS
-  if [ -z "$DB_PASS" ]; then
-    DB_PASS=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16 ; echo '')
-    echo "* Generated Password: $DB_PASS"
+
+  # Ensure PHP 8.3 binary is used if available to avoid PHP 8.5/CLI version mismatches
+  local PHP_BIN="php"
+  if command -v php8.3 >/dev/null 2>&1; then
+    PHP_BIN="php8.3"
   fi
-  
-  read -p "* Enter Node ID to link this database to [leave blank if none]: " NODE_ID
-  
-  echo "* Creating Database User for Pterodactyl Host..."
-  mysql -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';"
-  mysql -u root -e "ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';"
-  mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO '${DB_USER}'@'%' WITH GRANT OPTION;"
-  mysql -u root -e "FLUSH PRIVILEGES;"
+
+  # Check if a localhost Database Host already exists in Pterodactyl
+  local EXISTING_HOST_ID=""
+  if [ -d "/var/www/pterodactyl" ]; then
+    cd /var/www/pterodactyl
+    EXISTING_HOST_ID=$($PHP_BIN artisan tinker --execute="echo \Pterodactyl\Models\DatabaseHost::where('host', '127.0.0.1')->orWhere('host', 'localhost')->value('id') ?? '';" 2>/dev/null | grep -E '^[0-9]+$' | head -n 1 || true)
+  fi
+
+  if [ -n "$EXISTING_HOST_ID" ]; then
+    echo ""
+    echo "* Database Host 'Localhost MySQL' already exists (ID: ${EXISTING_HOST_ID})."
+    echo "* Skipping database user creation to preserve existing configuration."
+  else
+    echo ""
+    echo "* Let's configure the Database Host account."
+    read -p "* Enter Database Username [panel_db_user]: " DB_USER
+    DB_USER=${DB_USER:-panel_db_user}
+    
+    read -p "* Enter Database Password [randomly generated]: " DB_PASS
+    if [ -z "$DB_PASS" ]; then
+      DB_PASS=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16 ; echo '')
+      echo "* Generated Password: $DB_PASS"
+    fi
+    
+    read -p "* Enter Node ID to link this database to [leave blank if none]: " NODE_ID
+    
+    echo "* Creating Database User for Pterodactyl Host..."
+    mysql -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';"
+    mysql -u root -e "ALTER USER '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';"
+    mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO '${DB_USER}'@'%' WITH GRANT OPTION;"
+    mysql -u root -e "FLUSH PRIVILEGES;"
+
+    if [ -d "/var/www/pterodactyl" ]; then
+      cd /var/www/pterodactyl
+      $PHP_BIN artisan p:database-host:make \
+        --name="Localhost MySQL (phpMyAdmin)" \
+        --host="127.0.0.1" \
+        --port="3306" \
+        --username="${DB_USER}" \
+        --password="${DB_PASS}" \
+        --node="${NODE_ID}" \
+        --no-interaction || true
+    fi
+  fi
   
   echo "* Exposing phpMyAdmin to the web and configuring Auto-Login SSO..."
   if [ -d "/var/www/pterodactyl/public" ]; then
@@ -147,36 +178,10 @@ $cfg['Servers'][$i]['SignonSession'] = 'SignonSession';
 $cfg['Servers'][$i]['SignonURL'] = '/phpmyadmin/index.php';
 EOF
   fi
-  
-  echo "* Automating Pterodactyl Database Host Setup..."
-  if [ -d "/var/www/pterodactyl" ]; then
-    cd /var/www/pterodactyl
-    
-    # Ensure PHP 8.3 binary is used if available to avoid PHP 8.5/CLI version mismatches
-    local PHP_BIN="php"
-    if command -v php8.3 >/dev/null 2>&1; then
-      PHP_BIN="php8.3"
-    fi
 
-    # Check if a localhost Database Host already exists in Pterodactyl to avoid duplicate entries
-    local EXISTING_HOST_ID=$($PHP_BIN artisan tinker --execute="echo \Pterodactyl\Models\DatabaseHost::where('host', '127.0.0.1')->orWhere('host', 'localhost')->value('id') ?? '';" 2>/dev/null | grep -E '^[0-9]+$' | head -n 1 || true)
-
-    if [ -n "$EXISTING_HOST_ID" ]; then
-      echo "* Localhost Database Host already exists (ID: ${EXISTING_HOST_ID}). Updating credentials..."
-      $PHP_BIN artisan tinker --execute="\$h = \Pterodactyl\Models\DatabaseHost::find(${EXISTING_HOST_ID}); if (\$h) { \$h->update(['username' => '${DB_USER}', 'password' => '${DB_PASS}', 'node_id' => ${NODE_ID:-null}]); }" >/dev/null 2>&1 || true
-    else
-      echo "* Creating new Localhost Database Host entry..."
-      $PHP_BIN artisan p:database-host:make \
-        --name="Localhost MySQL (phpMyAdmin)" \
-        --host="127.0.0.1" \
-        --port="3306" \
-        --username="${DB_USER}" \
-        --password="${DB_PASS}" \
-        --node="${NODE_ID}" \
-        --no-interaction || true
-    fi
-    echo "* --------------------------------------------------"
-    echo "* phpMyAdmin and Database Host successfully configured!"
+  echo "* --------------------------------------------------"
+  echo "* phpMyAdmin and Database Host successfully configured!"
+  echo "* --------------------------------------------------"
     echo "* --------------------------------------------------"
   else
     echo "* Pterodactyl Panel is not installed at /var/www/pterodactyl!"
