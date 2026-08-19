@@ -350,26 +350,48 @@ EOF
     mkdir -p /opt/mongo-express
     cd /opt/mongo-express
     npm install mongo-express express dotenv --no-audit --no-fund || true
-    
-    # Create robust config.js for Mongo Express
+
+    # Create config.js from default config if available or write standard config
+    if [ -f "/opt/mongo-express/node_modules/mongo-express/config.default.js" ]; then
+      cp -f /opt/mongo-express/node_modules/mongo-express/config.default.js /opt/mongo-express/config.js || true
+    fi
+
+    # Create custom config override
     cat << 'EOF' > /opt/mongo-express/config.js
-module.exports = {
+var config = {
   mongodb: {
-    server: '127.0.0.1',
-    port: 27017,
+    server: process.env.ME_CONFIG_MONGODB_SERVER || '127.0.0.1',
+    port: process.env.ME_CONFIG_MONGODB_PORT || 27017,
+    useSystemAdmin: true,
     admin: true,
     auth: [],
   },
   site: {
     baseUrl: '/mongo-express/',
-    cookieSecret: 'zzamcode_mongo_express_secret_key',
-    sessionSecret: 'zzamcode_mongo_express_session_key',
+    cookieSecret: 'zzamcode_mongo_express_secret',
+    sessionSecret: 'zzamcode_mongo_express_session',
   },
   useBasicAuth: false,
   options: {
     documentsPerPage: 10,
   },
 };
+module.exports = config;
+EOF
+
+    # Create standalone index.js wrapper
+    cat << 'EOF' > /opt/mongo-express/index.js
+const express = require('express');
+const mongoExpress = require('mongo-express/lib/middleware');
+const mongoExpressConfig = require('./config');
+
+const app = express();
+app.use('/', mongoExpress(mongoExpressConfig));
+
+const port = process.env.PORT || 8081;
+app.listen(port, '127.0.0.1', () => {
+  console.log(`Mongo Express GUI listening on port ${port}`);
+});
 EOF
 
     # Find Node binary path
@@ -389,9 +411,9 @@ Environment=ME_CONFIG_MONGODB_PORT=27017
 Environment=ME_CONFIG_SITE_BASEURL=/mongo-express/
 Environment=ME_CONFIG_BASICAUTH=false
 Environment=PORT=8081
-ExecStart=${NODE_PATH} /opt/mongo-express/node_modules/mongo-express/app.js
+ExecStart=${NODE_PATH} /opt/mongo-express/index.js
 Restart=always
-RestartSec=5
+RestartSec=3
 
 [Install]
 WantedBy=multi-user.target
