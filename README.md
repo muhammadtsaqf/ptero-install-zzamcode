@@ -15,7 +15,7 @@
 
 ## 📌 Overview
 
-**`ptero-install-zzamcode`** adalah skrip instalasi otomatis berkinerja tinggi untuk **Pterodactyl Panel** dan **Pterodactyl Wings**. Didesain khusus untuk menyederhanakan proses instalasi kompleks menjadi hitungan detik dengan dukungan penuh **PHP 8.3**, **WhatsApp Bot Server Management**, **Real-time PM2 Terminal**, **Cloudflare SSL**, dan **Auto-Seeded Multifungsi Egg**.
+**`ptero-install-zzamcode`** adalah skrip instalasi otomatis berkinerja tinggi untuk **Pterodactyl Panel** dan **Pterodactyl Wings**. Didesain khusus untuk menyederhanakan proses instalasi kompleks menjadi hitungan detik dengan dukungan penuh **PHP 8.3**, **WhatsApp Bot Server Management**, **Real-time PM2 Terminal**, **Cloudflare SSL**, **Auto-Seeded Multifungsi Egg**, **phpMyAdmin SSO Auto-Login**, serta **Public Remote MongoDB Host Integration**.
 
 ---
 
@@ -40,7 +40,11 @@
   - **Java (JDK Temurin)**: 8, 11, 17, 21
   - **Tools Bawaan**: Bun, PM2, FFmpeg, ImageMagick, Puppeteer/Chromium Headless, Redis Local, MariaDB Local, dan Cloudflare Tunnel Otomatis.
 
-### 🔒 4. Private Panel Repository Architecture
+### 🍃 4. Database Management & Public Remote MongoDB (Opsi 5 & 6)
+- **Opsi 5 - phpMyAdmin SSO**: Menginstal phpMyAdmin terintegrasi langsung dengan Single Sign-On (SSO) tombol *Open phpMyAdmin* di client panel tanpa perlu login password manual.
+- **Opsi 6 - Remote MongoDB Host Setup**: Menginstal MongoDB Server 7.0 (Multi-OS support), mengonfigurasikan akses publik (`0.0.0.0`), membuka port `27017`, mendeteksi domain panel secara otomatis, dan langsung mendaftarkan **Public MongoDB Host** ke dalam Pterodactyl Database Hosts.
+
+### 🔒 5. Private Panel Repository Architecture
 - Panel utama disimpan dalam repository private `pterodactyl-panel-zzamcode` untuk keamanan source code.
 - Build otomatis via **GitHub Actions** disinkronkan langsung ke CDN Cloudflare (`pterodactyl-installer.zzam.dev`) sehingga proses unduh selalu cepat, stabil, dan 100% terkini.
 
@@ -55,11 +59,12 @@ bash <(curl -sSL https://pterodactyl-installer.zzam.dev)
 ```
 
 > 💡 **Menu Pilihan Installer:**
-> 1. `[0]` Install Pterodactyl Panel
-> 2. `[1]` Install Pterodactyl Wings
-> 3. `[2]` Install Panel & Wings (Satu VPS)
-> 4. `[3]` Update Panel / Update Script
-> 5. `[4]` Uninstall Pterodactyl Completely
+> 1. `[1]` Install Pterodactyl Panel
+> 2. `[2]` Install Pterodactyl Wings
+> 3. `[3]` Update Panel (UI/Frontend Update)
+> 4. `[4]` Uninstall Pterodactyl Completely
+> 5. `[5]` Install phpMyAdmin & Configure Localhost MySQL Host (Auto-Login SSO)
+> 6. `[6]` Install & Configure Public Remote MongoDB Host (Auto Domain Detection)
 
 ---
 
@@ -84,6 +89,8 @@ bash <(curl -sSL https://pterodactyl-installer.zzam.dev)
 | **443** | TCP | HTTPS Web Server | Akses Pterodactyl Panel UI (Encrypted) |
 | **8080** | TCP | Wings HTTP API | Komunikasi antara Panel dan Daemon Wings |
 | **2022** | TCP | Wings SFTP | Akses File Server via SFTP Client |
+| **3306** | TCP | MySQL Server Host | Koneksi Database Remote MySQL / phpMyAdmin |
+| **27017** | TCP | MongoDB Server Host | Koneksi Database Remote MongoDB (Opsi 6) |
 
 ---
 
