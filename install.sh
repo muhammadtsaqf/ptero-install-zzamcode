@@ -201,26 +201,81 @@ install_mongodb() {
   echo "* --------------------------------------------------"
   echo "* Installing MongoDB Server and configuring Remote Access..."
   echo "* --------------------------------------------------"
-  apt update
-  apt install -y gnupg curl wget ca-certificates || true
 
-  # Add Official MongoDB Community Repository if not already installed
-  if ! command -v mongod >/dev/null 2>&1; then
-    echo "* Adding Official MongoDB Repository..."
-    curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg --yes || true
-    CODENAME=$(lsb_release -cs 2>/dev/null || echo "jammy")
-    # Fallback to jammy if focal/noble/other unsupported
-    if [[ "$CODENAME" == "noble" ]]; then
-      CODENAME="jammy"
+  # Install MongoDB if not present
+  if ! command -v mongod >/dev/null 2>&1 && ! command -v mongodb >/dev/null 2>&1; then
+    echo "* Detecting OS and Package Manager for MongoDB installation..."
+    
+    if command -v apt-get >/dev/null 2>&1; then
+      apt-get update -y
+      apt-get install -y gnupg curl wget ca-certificates lsb-release || true
+      
+      local DISTRO=""
+      if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        DISTRO=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
+      fi
+      
+      local CODENAME=""
+      if command -v lsb_release >/dev/null 2>&1; then
+        CODENAME=$(lsb_release -cs 2>/dev/null || echo "")
+      fi
+
+      mkdir -p /usr/share/keyrings
+      curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg --yes || true
+      
+      if [[ "$DISTRO" == "debian" ]]; then
+        # Debian codenames: bookworm (12), bullseye (11), buster (10)
+        case "$CODENAME" in
+          bookworm|bullseye|buster) ;;
+          *) CODENAME="bookworm" ;;
+        esac
+        echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/debian ${CODENAME}/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list || true
+      else
+        # Ubuntu codenames: jammy (22.04), focal (20.04), bionic (18.04), noble (24.04 fallback to jammy)
+        case "$CODENAME" in
+          jammy|focal|bionic) ;;
+          *) CODENAME="jammy" ;;
+        esac
+        echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu ${CODENAME}/mongodb-org/7.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list || true
+      fi
+
+      apt-get update -y || true
+      apt-get install -y mongodb-org || apt-get install -y mongodb || true
+
+    elif command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
+      local PKG_MGR="dnf"
+      command -v dnf >/dev/null 2>&1 || PKG_MGR="yum"
+
+      cat << 'EOF' > /etc/yum.repos.d/mongodb-org-7.0.repo
+[mongodb-org-7.0]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/7.0/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
+EOF
+      $PKG_MGR install -y mongodb-org || $PKG_MGR install -y mongodb-server || true
+
+    elif command -v pacman >/dev/null 2>&1; then
+      pacman -Sy --noconfirm mongodb-bin || pacman -Sy --noconfirm mongodb || true
+    elif command -v zypper >/dev/null 2>&1; then
+      zypper install -y mongodb || true
     fi
-    echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu ${CODENAME}/mongodb-org/7.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list || true
-    apt update || true
-    apt install -y mongodb-org || apt install -y mongodb || true
   fi
 
-  systemctl daemon-reload || true
-  systemctl enable mongod || systemctl enable mongodb || true
-  systemctl start mongod || systemctl start mongodb || true
+  # Enable and Start MongoDB service
+  systemctl daemon-reload >/dev/null 2>&1 || true
+  if systemctl list-unit-files 2>/dev/null | grep -q -E "^mongod\.service"; then
+    systemctl enable mongod >/dev/null 2>&1 || true
+    systemctl start mongod >/dev/null 2>&1 || true
+  elif systemctl list-unit-files 2>/dev/null | grep -q -E "^mongodb\.service"; then
+    systemctl enable mongodb >/dev/null 2>&1 || true
+    systemctl start mongodb >/dev/null 2>&1 || true
+  else
+    systemctl enable mongod 2>/dev/null || systemctl enable mongodb 2>/dev/null || true
+    systemctl start mongod 2>/dev/null || systemctl start mongodb 2>/dev/null || true
+  fi
 
   # Ensure PHP 8.3 binary is used if available to avoid PHP 8.5/CLI version mismatches
   local PHP_BIN="php"
@@ -243,17 +298,36 @@ install_mongodb() {
   PANEL_DOMAIN=${INPUT_DOMAIN:-$PANEL_DOMAIN}
 
   # Configure mongodb bindIp to 0.0.0.0 for public remote access
-  if [ -f "/etc/mongodb.conf" ]; then
-    sed -i 's/bind_ip = .*/bind_ip = 0.0.0.0/' /etc/mongodb.conf || true
-  elif [ -f "/etc/mongod.conf" ]; then
+  if [ -f "/etc/mongod.conf" ]; then
     sed -i 's/bindIp: .*/bindIp: 0.0.0.0/' /etc/mongod.conf || true
+    sed -i 's/127.0.0.1/0.0.0.0/' /etc/mongod.conf || true
+  elif [ -f "/etc/mongodb.conf" ]; then
+    sed -i 's/bind_ip = .*/bind_ip = 0.0.0.0/' /etc/mongodb.conf || true
+    sed -i 's/127.0.0.1/0.0.0.0/' /etc/mongodb.conf || true
   fi
 
+  # Open Firewall Port 27017 across all firewall managers
   if command -v ufw >/dev/null 2>&1; then
     ufw allow 27017/tcp || true
   fi
+  if command -v firewall-cmd >/dev/null 2>&1; then
+    firewall-cmd --zone=public --add-port=27017/tcp --permanent >/dev/null 2>&1 || true
+    firewall-cmd --reload >/dev/null 2>&1 || true
+  fi
 
-  systemctl restart mongodb || systemctl restart mongod || true
+  # Configure SELinux if enabled
+  if command -v getenforce >/dev/null 2>&1 && [ "$(getenforce 2>/dev/null)" != "Disabled" ]; then
+    setsebool -P mongodb_connect_any 1 2>/dev/null || true
+  fi
+
+  # Restart MongoDB Service safely without systemd noise
+  if systemctl list-unit-files 2>/dev/null | grep -q -E "^mongod\.service"; then
+    systemctl restart mongod >/dev/null 2>&1 || true
+  elif systemctl list-unit-files 2>/dev/null | grep -q -E "^mongodb\.service"; then
+    systemctl restart mongodb >/dev/null 2>&1 || true
+  else
+    systemctl restart mongod 2>/dev/null || systemctl restart mongodb 2>/dev/null || true
+  fi
 
   # Check if MongoDB Host already exists in Pterodactyl DatabaseHosts
   local EXISTING_MONGO_HOST_ID=""
