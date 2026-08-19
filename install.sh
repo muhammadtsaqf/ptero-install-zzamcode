@@ -348,7 +348,7 @@ EOF
       --network="host" \
       -e ME_CONFIG_MONGODB_SERVER="127.0.0.1" \
       -e ME_CONFIG_MONGODB_PORT="27017" \
-      -e ME_CONFIG_SITE_BASEURL="/mongo-express/" \
+      -e ME_CONFIG_SITE_BASEURL="/mongo-express" \
       -e ME_CONFIG_BASICAUTH="false" \
       -e PORT="8081" \
       mongo-express || true
@@ -378,7 +378,7 @@ After=network.target mongod.service mongodb.service
 Type=simple
 Environment=ME_CONFIG_MONGODB_SERVER=127.0.0.1
 Environment=ME_CONFIG_MONGODB_PORT=27017
-Environment=ME_CONFIG_SITE_BASEURL=/mongo-express/
+Environment=ME_CONFIG_SITE_BASEURL=/mongo-express
 Environment=ME_CONFIG_BASICAUTH=false
 Environment=PORT=8081
 ExecStart=${NODE_BIN} mongo-express
@@ -395,14 +395,14 @@ EOF
     fi
   fi
 
-  # Add Nginx proxy pass for /mongo-express/ if Nginx config exists
+  # Add Nginx proxy pass for /mongo-express if Nginx config exists
   local NGINX_CONF="/etc/nginx/sites-available/pterodactyl.conf"
   [ ! -f "$NGINX_CONF" ] && NGINX_CONF="/etc/nginx/conf.d/pterodactyl.conf"
 
   if [ -f "$NGINX_CONF" ]; then
     sed -i '/location \/mongo-express/,/}/d' "$NGINX_CONF" 2>/dev/null || true
     if ! grep -q "location /mongo-express" "$NGINX_CONF"; then
-      sed -i '/location \/ {/i \    location = /mongo-express {\n        return 301 /mongo-express/;\n    }\n    location /mongo-express/ {\n        proxy_pass http://127.0.0.1:8081/;\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection "upgrade";\n        proxy_set_header Host $host;\n        proxy_cache_bypass $http_upgrade;\n    }\n' "$NGINX_CONF" || true
+      sed -i '/location \/ {/i \    location /mongo-express {\n        proxy_pass http://127.0.0.1:8081;\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection "upgrade";\n        proxy_set_header Host $host;\n        proxy_cache_bypass $http_upgrade;\n    }\n' "$NGINX_CONF" || true
       systemctl reload nginx >/dev/null 2>&1 || nginx -s reload >/dev/null 2>&1 || true
     fi
   fi
