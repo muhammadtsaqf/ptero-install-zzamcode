@@ -56,6 +56,7 @@ MSG_OPT_WINGS="Install Wings"
 MSG_OPT_UPDATE="Update Panel (Frontend/UI update without reinstalling)"
 MSG_OPT_UNINSTALL="Uninstall Panel / Wings"
 MSG_OPT_PHPMYADMIN="Install phpMyAdmin & Configure DB Host"
+MSG_OPT_MONGODB="Install & Configure MongoDB Public Remote Database Host"
 MSG_INPUT_REQ="Input is required!"
 MSG_INVALID_OPT="Invalid option!"
 MSG_ENTER_CHOICE="Enter your choice"
@@ -190,11 +191,95 @@ EOF
   echo "* --------------------------------------------------"
 }
 
+install_mongodb() {
+  if [ ! -d "/var/www/pterodactyl" ]; then
+    echo "* Pterodactyl Panel is not installed at /var/www/pterodactyl!"
+    echo "* Please install the Panel first."
+    return 1
+  fi
+
+  echo "* --------------------------------------------------"
+  echo "* Installing MongoDB Server and configuring Remote Access..."
+  echo "* --------------------------------------------------"
+  apt update
+  apt install -y mongodb || apt install -y mongodb-org || true
+  systemctl enable mongodb || systemctl enable mongod || true
+  systemctl start mongodb || systemctl start mongod || true
+
+  # Ensure PHP 8.3 binary is used if available to avoid PHP 8.5/CLI version mismatches
+  local PHP_BIN="php"
+  if command -v php8.3 >/dev/null 2>&1; then
+    PHP_BIN="php8.3"
+  fi
+
+  # Auto-detect Domain from Panel APP_URL
+  local PANEL_DOMAIN=""
+  if [ -f "/var/www/pterodactyl/.env" ]; then
+    PANEL_DOMAIN=$(grep -E '^APP_URL=' /var/www/pterodactyl/.env | cut -d '=' -f2 | sed -E 's|https?://||' | sed -E 's|/.*||' | tr -d ' ' || true)
+  fi
+
+  if [ -z "$PANEL_DOMAIN" ]; then
+    PANEL_DOMAIN=$(curl -s http://checkip.amazonaws.com || echo "localhost")
+  fi
+
+  echo "* Auto-detected Panel Domain/Host: ${PANEL_DOMAIN}"
+  read -p "* Enter Domain/Host for Public Remote Database [${PANEL_DOMAIN}]: " INPUT_DOMAIN
+  PANEL_DOMAIN=${INPUT_DOMAIN:-$PANEL_DOMAIN}
+
+  # Configure mongodb bindIp to 0.0.0.0 for public remote access
+  if [ -f "/etc/mongodb.conf" ]; then
+    sed -i 's/bind_ip = .*/bind_ip = 0.0.0.0/' /etc/mongodb.conf || true
+  elif [ -f "/etc/mongod.conf" ]; then
+    sed -i 's/bindIp: .*/bindIp: 0.0.0.0/' /etc/mongod.conf || true
+  fi
+
+  if command -v ufw >/dev/null 2>&1; then
+    ufw allow 27017/tcp || true
+  fi
+
+  systemctl restart mongodb || systemctl restart mongod || true
+
+  # Check if MongoDB Host already exists in Pterodactyl DatabaseHosts
+  local EXISTING_MONGO_HOST_ID=""
+  if [ -d "/var/www/pterodactyl" ]; then
+    cd /var/www/pterodactyl
+    EXISTING_MONGO_HOST_ID=$($PHP_BIN artisan tinker --execute="echo \Pterodactyl\Models\DatabaseHost::where('name', 'LIKE', '%MongoDB%')->orWhere('port', 27017)->value('id') ?? '';" 2>/dev/null | grep -E '^[0-9]+$' | head -n 1 || true)
+  fi
+
+  if [ -n "$EXISTING_MONGO_HOST_ID" ]; then
+    echo ""
+    echo "* Database Host 'Public MongoDB Host' already exists in Panel (ID: ${EXISTING_MONGO_HOST_ID})."
+  else
+    echo ""
+    echo "* Configuring MongoDB Database Host in Pterodactyl Panel..."
+    read -p "* Enter Node ID to link this MongoDB host to [leave blank if none]: " NODE_ID
+    
+    cd /var/www/pterodactyl
+    $PHP_BIN artisan p:database-host:make \
+      --name="Public MongoDB Host" \
+      --host="${PANEL_DOMAIN}" \
+      --port="27017" \
+      --username="root" \
+      --password="mongodb_remote_secret" \
+      --node="${NODE_ID}" \
+      --no-interaction || true
+  fi
+
+  echo "* --------------------------------------------------"
+  echo "* MongoDB Server successfully installed & configured for domain: ${PANEL_DOMAIN}:27017!"
+  echo "* --------------------------------------------------"
+}
+
 execute() {
   echo -e "\n\n* ptero-install-zzamcode $(date) \n\n" >>$LOG_PATH
 
   if [[ "$1" == "phpmyadmin" ]]; then
     install_phpmyadmin |& tee -a $LOG_PATH
+    return
+  fi
+
+  if [[ "$1" == "mongodb" ]]; then
+    install_mongodb |& tee -a $LOG_PATH
     return
   fi
 
@@ -227,6 +312,7 @@ while [ "$done" == false ]; do
     "$MSG_OPT_UPDATE"
     "$MSG_OPT_UNINSTALL"
     "$MSG_OPT_PHPMYADMIN"
+    "$MSG_OPT_MONGODB"
   )
 
   actions=(
@@ -235,6 +321,7 @@ while [ "$done" == false ]; do
     "update"
     "uninstall"
     "phpmyadmin"
+    "mongodb"
   )
 
   output "$MSG_WHAT_TO_DO"
