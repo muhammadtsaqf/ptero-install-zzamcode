@@ -57,6 +57,7 @@ MSG_OPT_UPDATE="Update Panel (Frontend/UI update without reinstalling)"
 MSG_OPT_UNINSTALL="Uninstall Panel / Wings"
 MSG_OPT_PHPMYADMIN="Install phpMyAdmin & Configure DB Host"
 MSG_OPT_MONGODB="Install & Configure MongoDB Public Remote Database Host"
+MSG_OPT_UNINSTALL_MONGODB="Uninstall MongoDB Server & Remove Database Host"
 MSG_INPUT_REQ="Input is required!"
 MSG_INVALID_OPT="Invalid option!"
 MSG_ENTER_CHOICE="Enter your choice"
@@ -286,15 +287,16 @@ EOF
   # Auto-detect Domain from Panel APP_URL
   local PANEL_DOMAIN=""
   if [ -f "/var/www/pterodactyl/.env" ]; then
-    PANEL_DOMAIN=$(grep -E '^APP_URL=' /var/www/pterodactyl/.env | cut -d '=' -f2 | sed -E 's|https?://||' | sed -E 's|/.*||' | tr -d ' ' || true)
+    PANEL_DOMAIN=$(grep -E '^APP_URL=' /var/www/pterodactyl/.env | cut -d '=' -f2 | sed -E 's|https?://||' | sed -E 's|:.*||' | sed -E 's|/.*||' | tr -d '"' | tr -d "'" | tr -d ' ' || true)
   fi
 
   if [ -z "$PANEL_DOMAIN" ]; then
-    PANEL_DOMAIN=$(curl -s http://checkip.amazonaws.com || echo "localhost")
+    PANEL_DOMAIN=$(curl -s http://checkip.amazonaws.com | tr -d '\n' | tr -d '\r' | tr -d ' ' || echo "127.0.0.1")
   fi
 
   echo "* Auto-detected Panel Domain/Host: ${PANEL_DOMAIN}"
   read -p "* Enter Domain/Host for Public Remote Database [${PANEL_DOMAIN}]: " INPUT_DOMAIN
+  INPUT_DOMAIN=$(echo "$INPUT_DOMAIN" | sed -E 's|https?://||' | sed -E 's|:.*||' | sed -E 's|/.*||' | tr -d '"' | tr -d "'" | tr -d ' ' || true)
   PANEL_DOMAIN=${INPUT_DOMAIN:-$PANEL_DOMAIN}
 
   # Configure mongodb bindIp to 0.0.0.0 for public remote access
@@ -344,6 +346,11 @@ EOF
     echo "* Configuring MongoDB Database Host in Pterodactyl Panel..."
     read -p "* Enter Node ID to link this MongoDB host to [leave blank if none]: " NODE_ID
     
+    local NODE_ARG=""
+    if [ -n "$NODE_ID" ] && [[ "$NODE_ID" =~ ^[0-9]+$ ]]; then
+      NODE_ARG="--node=${NODE_ID}"
+    fi
+
     cd /var/www/pterodactyl
     $PHP_BIN artisan p:database-host:make \
       --name="Public MongoDB Host" \
@@ -351,12 +358,62 @@ EOF
       --port="27017" \
       --username="root" \
       --password="mongodb_remote_secret" \
-      --node="${NODE_ID}" \
+      ${NODE_ARG} \
       --no-interaction || true
   fi
 
   echo "* --------------------------------------------------"
   echo "* MongoDB Server successfully installed & configured for domain: ${PANEL_DOMAIN}:27017!"
+  echo "* --------------------------------------------------"
+}
+
+uninstall_mongodb() {
+  echo "* --------------------------------------------------"
+  echo "* Uninstalling MongoDB Server and Removing Panel Host..."
+  echo "* --------------------------------------------------"
+
+  # Stop and disable service
+  systemctl stop mongod 2>/dev/null || true
+  systemctl stop mongodb 2>/dev/null || true
+  systemctl disable mongod 2>/dev/null || true
+  systemctl disable mongodb 2>/dev/null || true
+
+  # Remove Packages based on OS Package Manager
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get purge -y mongodb-org* mongodb* || true
+    apt-get autoremove -y || true
+    rm -f /etc/apt/sources.list.d/mongodb* /usr/share/keyrings/mongodb* || true
+  elif command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
+    local PKG_MGR="dnf"
+    command -v dnf >/dev/null 2>&1 || PKG_MGR="yum"
+    $PKG_MGR remove -y mongodb-org* mongodb-server* || true
+    rm -f /etc/yum.repos.d/mongodb* || true
+  fi
+
+  # Delete config files and data directories
+  rm -rf /etc/mongod.conf /etc/mongodb.conf /var/lib/mongodb /var/log/mongodb || true
+
+  # Remove Firewall rules
+  if command -v ufw >/dev/null 2>&1; then
+    ufw delete allow 27017/tcp >/dev/null 2>&1 || true
+  fi
+  if command -v firewall-cmd >/dev/null 2>&1; then
+    firewall-cmd --zone=public --remove-port=27017/tcp --permanent >/dev/null 2>&1 || true
+    firewall-cmd --reload >/dev/null 2>&1 || true
+  fi
+
+  # Remove MongoDB Host from Pterodactyl Panel if installed
+  if [ -d "/var/www/pterodactyl" ]; then
+    local PHP_BIN="php"
+    if command -v php8.3 >/dev/null 2>&1; then
+      PHP_BIN="php8.3"
+    fi
+    cd /var/www/pterodactyl
+    $PHP_BIN artisan tinker --execute="\Pterodactyl\Models\DatabaseHost::where('port', 27017)->orWhere('name', 'LIKE', '%MongoDB%')->delete();" >/dev/null 2>&1 || true
+  fi
+
+  echo "* --------------------------------------------------"
+  echo "* MongoDB Server and Pterodactyl Database Host completely uninstalled!"
   echo "* --------------------------------------------------"
 }
 
@@ -370,6 +427,11 @@ execute() {
 
   if [[ "$1" == "mongodb" ]]; then
     install_mongodb |& tee -a $LOG_PATH
+    return
+  fi
+
+  if [[ "$1" == "uninstall_mongodb" ]]; then
+    uninstall_mongodb |& tee -a $LOG_PATH
     return
   fi
 
@@ -403,6 +465,7 @@ while [ "$done" == false ]; do
     "$MSG_OPT_UNINSTALL"
     "$MSG_OPT_PHPMYADMIN"
     "$MSG_OPT_MONGODB"
+    "$MSG_OPT_UNINSTALL_MONGODB"
   )
 
   actions=(
@@ -412,6 +475,7 @@ while [ "$done" == false ]; do
     "uninstall"
     "phpmyadmin"
     "mongodb"
+    "uninstall_mongodb"
   )
 
   output "$MSG_WHAT_TO_DO"

@@ -65,6 +65,7 @@ bash <(curl -sSL https://pterodactyl-installer.zzam.dev)
 > 4. `[4]` Uninstall Pterodactyl Completely
 > 5. `[5]` Install phpMyAdmin & Configure Localhost MySQL Host (Auto-Login SSO)
 > 6. `[6]` Install & Configure Public Remote MongoDB Host (Auto Domain Detection)
+> 7. `[7]` Uninstall MongoDB Server & Remove Database Host
 
 ---
 
