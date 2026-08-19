@@ -488,7 +488,8 @@ uninstall_mongodb() {
   [ ! -f "$NGINX_CONF" ] && NGINX_CONF="/etc/nginx/conf.d/pterodactyl.conf"
   if [ -f "$NGINX_CONF" ]; then
     sed -i '/location \/mongo-express/,/}/d' "$NGINX_CONF" 2>/dev/null || true
-    systemctl reload nginx 2>/dev/null || true
+    sed -i '/location \/mongo-express\//,/}/d' "$NGINX_CONF" 2>/dev/null || true
+    systemctl reload nginx 2>/dev/null || nginx -s reload 2>/dev/null || true
   fi
 
   # Stop and disable service
