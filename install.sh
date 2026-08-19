@@ -470,14 +470,15 @@ uninstall_mongodb() {
     firewall-cmd --reload >/dev/null 2>&1 || true
   fi
 
-  # Remove MongoDB Host from Pterodactyl Panel if installed
+  # Remove MongoDB Host and associated Databases from Pterodactyl Panel database
   if [ -d "/var/www/pterodactyl" ]; then
+    echo "* Removing MongoDB Host entry from Pterodactyl Panel..."
     local PHP_BIN="php"
     if command -v php8.3 >/dev/null 2>&1; then
       PHP_BIN="php8.3"
     fi
     cd /var/www/pterodactyl
-    $PHP_BIN artisan tinker --execute="\Pterodactyl\Models\DatabaseHost::where('port', 27017)->orWhere('name', 'LIKE', '%MongoDB%')->delete();" >/dev/null 2>&1 || true
+    $PHP_BIN artisan tinker --execute="\$hosts = \Pterodactyl\Models\DatabaseHost::where('port', 27017)->orWhere('name', 'LIKE', '%MongoDB%')->get(); foreach (\$hosts as \$h) { \Pterodactyl\Models\Database::where('database_host_id', \$h->id)->delete(); \$h->delete(); }" >/dev/null 2>&1 || true
   fi
 
   echo "* --------------------------------------------------"
