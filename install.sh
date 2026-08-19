@@ -331,6 +331,60 @@ EOF
     systemctl restart mongod 2>/dev/null || systemctl restart mongodb 2>/dev/null || true
   fi
 
+  echo "* --------------------------------------------------"
+  echo "* Installing Mongo Express (MongoDB Web Control Panel GUI)..."
+  echo "* --------------------------------------------------"
+
+  # Install Node.js & npm if missing
+  if ! command -v npm >/dev/null 2>&1 || ! command -v node >/dev/null 2>&1; then
+    if command -v apt-get >/dev/null 2>&1; then
+      curl -fsSL https://deb.nodesource.com/setup_20.x | bash - || true
+      apt-get install -y nodejs || true
+    elif command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
+      curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - || true
+      dnf install -y nodejs || yum install -y nodejs || true
+    fi
+  fi
+
+  if command -v npm >/dev/null 2>&1; then
+    npm install -g mongo-express || true
+    
+    # Create systemd service for Mongo Express running on port 8081
+    mkdir -p /etc/mongo-express
+    cat << 'EOF' > /etc/systemd/system/mongo-express.service
+[Unit]
+Description=Mongo Express Web GUI Control Panel
+After=network.target mongod.service mongodb.service
+
+[Service]
+Type=simple
+Environment=ME_CONFIG_MONGODB_SERVER=127.0.0.1
+Environment=ME_CONFIG_MONGODB_PORT=27017
+Environment=ME_CONFIG_SITE_BASEURL=/mongo-express/
+Environment=ME_CONFIG_BASICAUTH=false
+Environment=PORT=8081
+ExecStart=/usr/bin/env mongo-express
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    systemctl enable mongo-express >/dev/null 2>&1 || true
+    systemctl restart mongo-express >/dev/null 2>&1 || true
+
+    # Add Nginx proxy pass for /mongo-express if Nginx config exists
+    local NGINX_CONF="/etc/nginx/sites-available/pterodactyl.conf"
+    [ ! -f "$NGINX_CONF" ] && NGINX_CONF="/etc/nginx/conf.d/pterodactyl.conf"
+
+    if [ -f "$NGINX_CONF" ] && ! grep -q "location /mongo-express" "$NGINX_CONF"; then
+      sed -i '/location \/ {/i \    location /mongo-express {\n        proxy_pass http://127.0.0.1:8081;\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection "upgrade";\n        proxy_set_header Host $host;\n        proxy_cache_bypass $http_upgrade;\n    }\n' "$NGINX_CONF" || true
+      systemctl reload nginx >/dev/null 2>&1 || nginx -s reload >/dev/null 2>&1 || true
+    fi
+  fi
+
   # Check if MongoDB Host already exists in Pterodactyl DatabaseHosts
   local EXISTING_MONGO_HOST_ID=""
   if [ -d "/var/www/pterodactyl" ]; then
@@ -369,8 +423,22 @@ EOF
 
 uninstall_mongodb() {
   echo "* --------------------------------------------------"
-  echo "* Uninstalling MongoDB Server and Removing Panel Host..."
+  echo "* Uninstalling MongoDB Server, Mongo Express GUI, and Removing Panel Host..."
   echo "* --------------------------------------------------"
+
+  # Stop and disable Mongo Express service
+  systemctl stop mongo-express 2>/dev/null || true
+  systemctl disable mongo-express 2>/dev/null || true
+  rm -f /etc/systemd/system/mongo-express.service || true
+  systemctl daemon-reload 2>/dev/null || true
+
+  # Remove Nginx Mongo Express location block if present
+  local NGINX_CONF="/etc/nginx/sites-available/pterodactyl.conf"
+  [ ! -f "$NGINX_CONF" ] && NGINX_CONF="/etc/nginx/conf.d/pterodactyl.conf"
+  if [ -f "$NGINX_CONF" ]; then
+    sed -i '/location \/mongo-express/,/}/d' "$NGINX_CONF" 2>/dev/null || true
+    systemctl reload nginx 2>/dev/null || true
+  fi
 
   # Stop and disable service
   systemctl stop mongod 2>/dev/null || true
