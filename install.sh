@@ -202,9 +202,25 @@ install_mongodb() {
   echo "* Installing MongoDB Server and configuring Remote Access..."
   echo "* --------------------------------------------------"
   apt update
-  apt install -y mongodb || apt install -y mongodb-org || true
-  systemctl enable mongodb || systemctl enable mongod || true
-  systemctl start mongodb || systemctl start mongod || true
+  apt install -y gnupg curl wget ca-certificates || true
+
+  # Add Official MongoDB Community Repository if not already installed
+  if ! command -v mongod >/dev/null 2>&1; then
+    echo "* Adding Official MongoDB Repository..."
+    curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg --yes || true
+    CODENAME=$(lsb_release -cs 2>/dev/null || echo "jammy")
+    # Fallback to jammy if focal/noble/other unsupported
+    if [[ "$CODENAME" == "noble" ]]; then
+      CODENAME="jammy"
+    fi
+    echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu ${CODENAME}/mongodb-org/7.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list || true
+    apt update || true
+    apt install -y mongodb-org || apt install -y mongodb || true
+  fi
+
+  systemctl daemon-reload || true
+  systemctl enable mongod || systemctl enable mongodb || true
+  systemctl start mongod || systemctl start mongodb || true
 
   # Ensure PHP 8.3 binary is used if available to avoid PHP 8.5/CLI version mismatches
   local PHP_BIN="php"
