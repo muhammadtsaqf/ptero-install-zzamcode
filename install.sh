@@ -335,83 +335,53 @@ EOF
   echo "* Installing Mongo Express (MongoDB Web Control Panel GUI)..."
   echo "* --------------------------------------------------"
 
-  # Install Node.js & npm if missing
-  if ! command -v npm >/dev/null 2>&1 || ! command -v node >/dev/null 2>&1; then
-    if command -v apt-get >/dev/null 2>&1; then
-      curl -fsSL https://deb.nodesource.com/setup_20.x | bash - || true
-      apt-get install -y nodejs || true
-    elif command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
-      curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - || true
-      dnf install -y nodejs || yum install -y nodejs || true
+  # Stop previous instances if running
+  systemctl stop mongo-express 2>/dev/null || true
+  docker stop mongo-express 2>/dev/null || true
+  docker rm mongo-express 2>/dev/null || true
+
+  if command -v docker >/dev/null 2>&1; then
+    echo "* Docker detected! Starting Mongo Express via Docker container..."
+    docker run -d \
+      --name mongo-express \
+      --restart always \
+      -p 8081:8081 \
+      -e ME_CONFIG_MONGODB_SERVER="127.0.0.1" \
+      -e ME_CONFIG_MONGODB_PORT="27017" \
+      -e ME_CONFIG_SITE_BASEURL="/mongo-express/" \
+      -e ME_CONFIG_BASICAUTH="false" \
+      -e PORT="8081" \
+      mongo-express || true
+  else
+    # Install Node.js & npm if missing
+    if ! command -v npm >/dev/null 2>&1 || ! command -v node >/dev/null 2>&1; then
+      if command -v apt-get >/dev/null 2>&1; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash - || true
+        apt-get install -y nodejs || true
+      elif command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
+        curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - || true
+        dnf install -y nodejs || yum install -y nodejs || true
+      fi
     fi
-  fi
 
-  if command -v npm >/dev/null 2>&1; then
-    mkdir -p /opt/mongo-express
-    cd /opt/mongo-express
-    npm install mongo-express express dotenv --no-audit --no-fund || true
+    if command -v npm >/dev/null 2>&1; then
+      npm install -g mongo-express || true
+      
+      NODE_BIN=$(command -v mongo-express || command -v npx || echo "/usr/bin/npx")
 
-    # Create config.js from default config if available or write standard config
-    if [ -f "/opt/mongo-express/node_modules/mongo-express/config.default.js" ]; then
-      cp -f /opt/mongo-express/node_modules/mongo-express/config.default.js /opt/mongo-express/config.js || true
-    fi
-
-    # Create custom config override
-    cat << 'EOF' > /opt/mongo-express/config.js
-var config = {
-  mongodb: {
-    server: process.env.ME_CONFIG_MONGODB_SERVER || '127.0.0.1',
-    port: process.env.ME_CONFIG_MONGODB_PORT || 27017,
-    useSystemAdmin: true,
-    admin: true,
-    auth: [],
-  },
-  site: {
-    baseUrl: '/mongo-express/',
-    cookieSecret: 'zzamcode_mongo_express_secret',
-    sessionSecret: 'zzamcode_mongo_express_session',
-  },
-  useBasicAuth: false,
-  options: {
-    documentsPerPage: 10,
-  },
-};
-module.exports = config;
-EOF
-
-    # Create standalone index.js wrapper
-    cat << 'EOF' > /opt/mongo-express/index.js
-const express = require('express');
-const mongoExpress = require('mongo-express/lib/middleware');
-const mongoExpressConfig = require('./config');
-
-const app = express();
-app.use('/', mongoExpress(mongoExpressConfig));
-
-const port = process.env.PORT || 8081;
-app.listen(port, '127.0.0.1', () => {
-  console.log(`Mongo Express GUI listening on port ${port}`);
-});
-EOF
-
-    # Find Node binary path
-    NODE_PATH=$(command -v node || echo "/usr/bin/node")
-
-    # Create systemd service for Mongo Express running on port 8081
-    cat << EOF > /etc/systemd/system/mongo-express.service
+      cat << EOF > /etc/systemd/system/mongo-express.service
 [Unit]
 Description=Mongo Express Web GUI Control Panel
 After=network.target mongod.service mongodb.service
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/mongo-express
 Environment=ME_CONFIG_MONGODB_SERVER=127.0.0.1
 Environment=ME_CONFIG_MONGODB_PORT=27017
 Environment=ME_CONFIG_SITE_BASEURL=/mongo-express/
 Environment=ME_CONFIG_BASICAUTH=false
 Environment=PORT=8081
-ExecStart=${NODE_PATH} /opt/mongo-express/index.js
+ExecStart=${NODE_BIN} mongo-express
 Restart=always
 RestartSec=3
 
@@ -419,20 +389,21 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
-    systemctl daemon-reload >/dev/null 2>&1 || true
-    systemctl enable mongo-express >/dev/null 2>&1 || true
-    systemctl restart mongo-express >/dev/null 2>&1 || true
+      systemctl daemon-reload >/dev/null 2>&1 || true
+      systemctl enable mongo-express >/dev/null 2>&1 || true
+      systemctl restart mongo-express >/dev/null 2>&1 || true
+    fi
+  fi
 
-    # Add Nginx proxy pass for /mongo-express/ if Nginx config exists
-    local NGINX_CONF="/etc/nginx/sites-available/pterodactyl.conf"
-    [ ! -f "$NGINX_CONF" ] && NGINX_CONF="/etc/nginx/conf.d/pterodactyl.conf"
+  # Add Nginx proxy pass for /mongo-express/ if Nginx config exists
+  local NGINX_CONF="/etc/nginx/sites-available/pterodactyl.conf"
+  [ ! -f "$NGINX_CONF" ] && NGINX_CONF="/etc/nginx/conf.d/pterodactyl.conf"
 
-    if [ -f "$NGINX_CONF" ]; then
-      sed -i '/location \/mongo-express/d' "$NGINX_CONF" 2>/dev/null || true
-      if ! grep -q "location /mongo-express/" "$NGINX_CONF"; then
-        sed -i '/location \/ {/i \    location /mongo-express/ {\n        proxy_pass http://127.0.0.1:8081/;\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection "upgrade";\n        proxy_set_header Host $host;\n        proxy_cache_bypass $http_upgrade;\n    }\n' "$NGINX_CONF" || true
-        systemctl reload nginx >/dev/null 2>&1 || nginx -s reload >/dev/null 2>&1 || true
-      fi
+  if [ -f "$NGINX_CONF" ]; then
+    sed -i '/location \/mongo-express/d' "$NGINX_CONF" 2>/dev/null || true
+    if ! grep -q "location /mongo-express/" "$NGINX_CONF"; then
+      sed -i '/location \/ {/i \    location /mongo-express/ {\n        proxy_pass http://127.0.0.1:8081/;\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection "upgrade";\n        proxy_set_header Host $host;\n        proxy_cache_bypass $http_upgrade;\n    }\n' "$NGINX_CONF" || true
+      systemctl reload nginx >/dev/null 2>&1 || nginx -s reload >/dev/null 2>&1 || true
     fi
   fi
 
@@ -477,7 +448,9 @@ uninstall_mongodb() {
   echo "* Uninstalling MongoDB Server, Mongo Express GUI, and Removing Panel Host..."
   echo "* --------------------------------------------------"
 
-  # Stop and disable Mongo Express service
+  # Stop and disable Mongo Express service / docker container
+  docker stop mongo-express 2>/dev/null || true
+  docker rm mongo-express 2>/dev/null || true
   systemctl stop mongo-express 2>/dev/null || true
   systemctl disable mongo-express 2>/dev/null || true
   rm -rf /etc/systemd/system/mongo-express.service /opt/mongo-express || true
