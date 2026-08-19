@@ -347,23 +347,49 @@ EOF
   fi
 
   if command -v npm >/dev/null 2>&1; then
-    npm install -g mongo-express || true
+    mkdir -p /opt/mongo-express
+    cd /opt/mongo-express
+    npm install mongo-express express dotenv --no-audit --no-fund || true
     
+    # Create robust config.js for Mongo Express
+    cat << 'EOF' > /opt/mongo-express/config.js
+module.exports = {
+  mongodb: {
+    server: '127.0.0.1',
+    port: 27017,
+    admin: true,
+    auth: [],
+  },
+  site: {
+    baseUrl: '/mongo-express/',
+    cookieSecret: 'zzamcode_mongo_express_secret_key',
+    sessionSecret: 'zzamcode_mongo_express_session_key',
+  },
+  useBasicAuth: false,
+  options: {
+    documentsPerPage: 10,
+  },
+};
+EOF
+
+    # Find Node binary path
+    NODE_PATH=$(command -v node || echo "/usr/bin/node")
+
     # Create systemd service for Mongo Express running on port 8081
-    mkdir -p /etc/mongo-express
-    cat << 'EOF' > /etc/systemd/system/mongo-express.service
+    cat << EOF > /etc/systemd/system/mongo-express.service
 [Unit]
 Description=Mongo Express Web GUI Control Panel
 After=network.target mongod.service mongodb.service
 
 [Service]
 Type=simple
+WorkingDirectory=/opt/mongo-express
 Environment=ME_CONFIG_MONGODB_SERVER=127.0.0.1
 Environment=ME_CONFIG_MONGODB_PORT=27017
 Environment=ME_CONFIG_SITE_BASEURL=/mongo-express/
 Environment=ME_CONFIG_BASICAUTH=false
 Environment=PORT=8081
-ExecStart=/usr/bin/env mongo-express
+ExecStart=${NODE_PATH} /opt/mongo-express/node_modules/mongo-express/app.js
 Restart=always
 RestartSec=5
 
@@ -375,13 +401,16 @@ EOF
     systemctl enable mongo-express >/dev/null 2>&1 || true
     systemctl restart mongo-express >/dev/null 2>&1 || true
 
-    # Add Nginx proxy pass for /mongo-express if Nginx config exists
+    # Add Nginx proxy pass for /mongo-express/ if Nginx config exists
     local NGINX_CONF="/etc/nginx/sites-available/pterodactyl.conf"
     [ ! -f "$NGINX_CONF" ] && NGINX_CONF="/etc/nginx/conf.d/pterodactyl.conf"
 
-    if [ -f "$NGINX_CONF" ] && ! grep -q "location /mongo-express" "$NGINX_CONF"; then
-      sed -i '/location \/ {/i \    location /mongo-express {\n        proxy_pass http://127.0.0.1:8081;\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection "upgrade";\n        proxy_set_header Host $host;\n        proxy_cache_bypass $http_upgrade;\n    }\n' "$NGINX_CONF" || true
-      systemctl reload nginx >/dev/null 2>&1 || nginx -s reload >/dev/null 2>&1 || true
+    if [ -f "$NGINX_CONF" ]; then
+      sed -i '/location \/mongo-express/d' "$NGINX_CONF" 2>/dev/null || true
+      if ! grep -q "location /mongo-express/" "$NGINX_CONF"; then
+        sed -i '/location \/ {/i \    location /mongo-express/ {\n        proxy_pass http://127.0.0.1:8081/;\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection "upgrade";\n        proxy_set_header Host $host;\n        proxy_cache_bypass $http_upgrade;\n    }\n' "$NGINX_CONF" || true
+        systemctl reload nginx >/dev/null 2>&1 || nginx -s reload >/dev/null 2>&1 || true
+      fi
     fi
   fi
 
@@ -429,7 +458,7 @@ uninstall_mongodb() {
   # Stop and disable Mongo Express service
   systemctl stop mongo-express 2>/dev/null || true
   systemctl disable mongo-express 2>/dev/null || true
-  rm -f /etc/systemd/system/mongo-express.service || true
+  rm -rf /etc/systemd/system/mongo-express.service /opt/mongo-express || true
   systemctl daemon-reload 2>/dev/null || true
 
   # Remove Nginx Mongo Express location block if present
